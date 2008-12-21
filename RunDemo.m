@@ -24,11 +24,11 @@ Sim.pf      = 1;                                    % use conditional sampler (n
 Sim.StimDim = 1;                                    % # of stimulus dimensions
 Sim.x       = 1*randn(1,Sim.T);                     % stimulus
 
-Sim.Mstep   = 1;                                % do M-step
-Sim.C_params= 1;                                % whether to estimate calcium parameters {tau,A,C_0,sig}
-Sim.n_params= 0;                               % whether to estimate rate governing parameters {b,k}
-Sim.h_params= 0;                              % whether to estimate spike history parameters {h}
-Sim.F_params= 0;                              % whether to estimate observation parameters {alpha,beta,gamma,zeta}
+Sim.Mstep   = 1;                                    % do M-step
+Sim.C_params= 1;                                    % whether to estimate calcium parameters {tau,A,C_0,sig}
+Sim.n_params= 0;                                    % whether to estimate rate governing parameters {b,k}
+Sim.h_params= 0;                                    % whether to estimate spike history parameters {h}
+Sim.F_params= 0;                                    % whether to estimate observation parameters {alpha,beta,gamma,zeta}
 Sim.MaxIter = 10;                                    % max # of EM iterartions
 
 %% 2) initialize parameters
