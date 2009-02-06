@@ -102,7 +102,7 @@ if Sim.C_params == true
     Enew.A      = ve_x(2);
     Enew.C_0    = ve_x(3)/ve_x(1);
     Enew.sigma_c= sqrt(-(0.5*ve_x'*M.Q*ve_x + M.L'*ve_x))/(Sim.T*Sim.dt);
-    Enew.lik_c  =fval;
+    Enew.lik_c  = -(M.K/2+fval)/(2*Enew.sigma_c*sqrt(Sim.dt)) - M.J*log(Enew.sigma_c); %lik for [Ca]
     lik = [lik Enew.lik_c];
 end
 
@@ -122,20 +122,56 @@ if Sim.F_params == true
     fprintf('estimating observation parammeters\n')
     options         = optimset('Display','off','GradObj','off'); %use gradient
     ab_0            = [E.alpha E.beta];
-    [ab Enew.lik_o]   = fminunc(@f_ab,ab_0,options);%find MLE
+%     [ab Enew.lik_o]   = fminunc(@f_ab,ab_0,options);%find MLE
+    [Enew.lik_o ab]   = f1_ab(ab_0);%find MLE for {alpha, beta and gamma*}
     Enew.alpha=ab(1);
     Enew.beta=ab(2);
+    Enew.gamma=E.gamma*ab(3);
+    Enew.zeta=E.zeta*ab(3);
     lik = [lik Enew.lik_o];
 end
 
-    function lik = f_ab(ab_o)
-        Fmean=Hill_v1(E,S.w_b.*S.C);
-        A=-[Fmean(:) ones(Sim.N*Sim.T,1)];
-        H=A'*A;
-        f=A'*repmat(F,Sim.N,1);
-        x = quadprog(H,f,[],[],[],[],[0 0],[inf inf]);
-
-    end %function f_ab_0
-%%
+%     function [lik x] = f_ab(ab_o)
+%         Fmean=Hill_v1(E,S.w_b.*S.C);
+%         A=-[Fmean(:) ones(Sim.N*Sim.T,1)];
+%         H=A'*A;
+%         f=A'*repmat(F,Sim.N,1);
+%         [x lik] = quadprog(H,f,[],[],[],[],[0 0],[inf inf]);        
+%     end %function f_ab_0
+    
+  function [lik x] = f1_ab(ab_o)
+    %THIS EXPLICITLY ASSUMES WEIGHTS w_b ARE SUM=1 NORMALIZED
+    pfS=Hill_v1(E,S.C);
+    pfV=E.gamma*pfS+E.zeta;
+    % minimize quadratic form of E[(F - ab(1)*pfS - ab(2))^2/pfV]
+    % taken as weighted average over all particles (Fmean)
+    f1_abH=0; f1_abf=0; f1_abc=0; f1_abn=0;
+    for i=1:size(pfS,1)
+      f1_abH = f1_abH + ...
+        [sum(pfS(i,:).^2./pfV(i,:).*S.w_b(i,:)) sum(pfS(i,:)./pfV(i,:).*S.w_b(i,:));
+         sum(pfS(i,:)./pfV(i,:).*S.w_b(i,:))    sum(S.w_b(i,:)./pfV(i,:))];
+      f1_abf = f1_abf - ...
+        [sum(pfS(i,:).*F(:)'./pfV(i,:).*S.w_b(i,:));
+         sum(F(:)'./pfV(i,:).*S.w_b(i,:))];
+      f1_abc = f1_abc + sum(F(:)'.^2./pfV(i,:).*S.w_b(i,:));
+      f1_abn = f1_abn + sum(S.w_b(i,:));
+    end
+    % % this is an alternative setup for doing this
+    % pfS=sum(S.w_b.*Hill_v1(E,S.C),1);
+    % pfV=E.gamma*pfS+E.zeta;
+    % A=-[pfS(:)./sqrt(pfV(:)) ones(Sim.T,1)./sqrt(pfV(:))];
+    % H=A'*A;
+    % f=A'*(F(:)./sqrt(pfV(:)));
+    % solve as QP given ab(1)>0 and no bounds on ab(2)
+    [x lik] = quadprog(f1_abH,f1_abf,[],[],[],[],[0 -inf],[inf inf]);
+    lik=(lik+f1_abc/2);               %estimate the variance
+    if(isfield(Sim,'G_params') && Sim.G_params==1)%estimate gamma_new/gamma
+      x(3)=lik/f1_abn; 
+    else%if estimating gamma doesn't seem to be working out...
+      x(3)=1;
+    end
+    lik=-lik-f1_abn*log(x(3))/2-sum(log(pfV(:)).*S.w_b(:))/2;
+  end %function f_ab_0
+  %%
 Enew.lik=sum(lik);
 end

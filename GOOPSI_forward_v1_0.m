@@ -91,7 +91,6 @@ O = update_moments(Sim,F,P,S,O,A,s);            % recurse back to get P[O_s | C_
 %% do the particle filter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for t=Sim.freq+1:Sim.T-Sim.freq
-
     if Sim.pf==0 || (F(s+Sim.freq)-P.beta)/P.alpha>0.98 ||(F(s+Sim.freq)-P.beta)/P.alpha<0
         S = prior_sampler(Sim,F,P,S,A,t);       % use prior sampler when gaussian approximation is not good
     else                                        % otherwise use conditional sampler
@@ -314,8 +313,10 @@ if mod(t,Sim.freq)==0                       % if not intermittent
     m       = repmat(O.mu(1,t-s),Sim.N,1);  % get mean
 else                                        % if intermittent, sample from mixture
                                             % first sample component
-    [fo,sp_i]   = histc(A.C_sampl(sp,t),[0  cumsum(O.p(1:k-1,t-s))'/sum(O.p(1:k-1,t-s))]);
-    [fo,nosp_i] = histc(A.C_sampl(nosp,t),[0  cumsum(O.p(1:k,t-s))'/sum(O.p(1:k,t-s))]);
+    if(isempty(find(sp))) sp_i=[];          % handler for empty spike trains
+    else [fo,sp_i]   = histc(A.C_sampl(sp,t),[0  cumsum(O.p(1:k-1,t-s))'/sum(O.p(1:k-1,t-s))]); end
+    if(isempty(find(nosp))) nosp_i=[];      % handle for saturated spike trains
+    else [fo,nosp_i] = histc(A.C_sampl(nosp,t),[0  cumsum(O.p(1:k,t-s))'/sum(O.p(1:k,t-s))]); end
 
     v       = O.sig2(1:k,t-s);              % get var of each component
     v(sp)   = v(sp_i);                      % if particle spiked, then use variance of spiking

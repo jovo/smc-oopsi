@@ -54,6 +54,8 @@ while Sim.conv==false;
     else                                            % if maximizing the calcium parameters, we need to also compute some other sufficient statistics
         M.Q = zeros(3);                             % the quadratic term for the calcium parameters
         M.L = zeros(3,1);                           % the linear term for the calcium parameters
+        M.J = 0;
+        M.K = 0;
         for t=Sim.T-Sim.freq-1:-1:Sim.freq+1
             Z = GOOPSI_backward_v1_0(Sim,S,P,Z,t);
             S.w_b(:,t-1) = Z.w_b;
@@ -64,24 +66,37 @@ while Sim.conv==false;
             bmat    = Z.C1mat-Z.C0mat';
             bPHH    = Z.PHH.*bmat;
 
-            M.Q(1,1)= M.Q(1,1) + sum(Z.PHH*(C0dt.^2));
+            M.Q(1,1)= M.Q(1,1) + sum(Z.PHH*(C0dt.^2));  % Q-term in QP
             M.Q(1,2)= M.Q(1,2) - Z.n1'*Z.PHH*C0dt;
             M.Q(1,3)= M.Q(1,3) + sum(sum(-Z.PHH.*Z.C0mat'*Sim.dt^2));
             M.Q(2,2)= M.Q(2,2) + sum(Z.PHH'*(Z.n1.^2));
             M.Q(2,3)= M.Q(2,3) + sum(sum(Z.PHH(:).*repmat(Z.n1,Sim.N,1))*Sim.dt);
             M.Q(3,3)= M.Q(3,3) + sum(Z.PHH(:))*Sim.dt^2;
 
-            M.L(1)  = M.L(1) + sum(bPHH*C0dt);
+            M.L(1)  = M.L(1) + sum(bPHH*C0dt);          % L-term in QP
             M.L(2)  = M.L(2) - sum(bPHH'*Z.n1);
             M.L(3)  = M.L(3) - Sim.dt*sum(bPHH(:));
+            
+            M.J     = M.J + sum(Z.PHH(:));              % J-term in QP /sum J^(i,j)_{t,t-1}/
+            
+            M.K     = M.K + sum(Z.PHH(:).*bmat(:).^2);  % K-term in QP /sum J^(i,j)_{t,t-1} (d^(i,j)_t)^2/            
         end
-        M.Q(2,1) = M.Q(1,2);                    % since these matrices are symmetric, i can just copy over
+        M.Q(2,1) = M.Q(1,2);                            % symmetrize Q
         M.Q(3,1) = M.Q(1,3);
         M.Q(3,2) = M.Q(2,3);
     end
 
     fprintf('\n')
-
+    if(isfield(Sim,'truespt'))                  %force true spikes
+      M.n_sampl=S.n;
+      S.n=repmat(Sim.truespt(:)',[size(S.n,1) 1]); 
+    end;     
+    
+    % copy particle swarm for later use
+    M.w=S.w_b;
+    M.n=S.n;
+    M.C=S.C;
+    
     %% compute moments and percentiles
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % means
@@ -114,8 +129,8 @@ while Sim.conv==false;
         P    = GOOPSI_Mstep_v1_0(Sim,S,M,P,F);         % update parameters
         fprintf('\n\nIteration #%g, lik=%g, dlik=%g\n',i,P.lik,P.lik-Eold.lik)
 
-        % keep record of best stuff
-        if P.lik>= maxlik                   % if like is better than best lik so far
+        % keep record of best stuff, or if told to ignore lik
+        if((isfield(P,'ignorelik') && P.ignorelik==1) || P.lik>= maxlik)
             E_best  = P;                    % update best parameters
             M_best  = M;                    % update best moments
             maxlik  = P.lik;                % update best likelihood
@@ -123,7 +138,7 @@ while Sim.conv==false;
             subplot(nrows,1,4), cla,hold on,% plot spike train estimate
             if isfield(Sim,'n'), stem(Sim.n,'Marker','.','MarkerSize',20,'LineWidth',2,'Color',[.75 .75 .75]); end
             BarVar=M.nbar+M.nvar; BarVar(BarVar>1)=1;
-            stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 1 .8]);
+            stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 .8 0]);
             stem(M.nbar,'Marker','none','LineWidth',2,'Color',[0 .5 0])
             axis([0 Sim.T 0 1]),
         end
@@ -136,6 +151,9 @@ while Sim.conv==false;
             fprintf('\nA      = %.2f',P.A)
             fprintf('\nC_0    = %.2f',P.C_0)
             fprintf('\nsig    = %.2f',P.sigma_c)
+            fprintf('\nalpha  = %.2f',P.alpha)
+            fprintf('\nbeta   = %.2f',P.beta)
+            fprintf('\ngamma  = %.2g',P.gamma)
         end
 
         % plot lik and inferrence
@@ -156,7 +174,7 @@ while Sim.conv==false;
             axis('tight'),
         end
         BarVar=M.nbar+M.nvar; BarVar(BarVar>1)=1;
-        stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 1 .8]);
+        stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 .8 0]);
         stem(M.nbar,'Marker','none','LineWidth',2,'Color',[0 .5 0])
         
         drawnow
