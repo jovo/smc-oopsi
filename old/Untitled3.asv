@@ -1,3 +1,0 @@
-U_sampl   = rand(1,Sim.T);                              %generate random number to use for sampling
-    R.p = 1-exp(-exp(kx)*Sim.dt);                       %compute P[n_t]
-    R.n = U_sampl<R.p;                                  %sample n_t
