@@ -1,0 +1,94 @@
+function O = PPR_not_intermittent(F,dt,ex_n_sp)
+% this m-file generates runs a projection pursuit regression algorithm
+% assuming:
+% 1) the fluorescence model is F_t = C_t + epsilon_t.  
+% 2) the data in not sampled intermittently.  
+% 3) calcium exponentially filters spike times
+%  
+% Input: 
+% F:        a vector fluorescence observations
+% dt:       time step size
+% ex_n_sp:  expected number of spikes
+% 
+% Output (structure):
+% ppr_n:    list of spike times inferred using the ppr algorithm
+% A:        peak of calcium kernel
+% tau:      time constant of calcium kernel
+
+%% set simulation parameters
+Sim.dt      = dt;                   %time step size
+Sim.T       = length(F);            %# of time steps
+Sim.Nsec    = Sim.T*Sim.dt;         %# of sec
+Sim.tvec    = Sim.dt:Sim.dt:Sim.Nsec;%time vector
+
+
+%% initialize initializer
+dF              = diff(F);          %get dF
+[sdF ind]       = sort(dF);         %sort dF
+sp_thres        = 1-ex_n_sp/Sim.T;  %threshold based on expected number of spikes
+sp_ind          = ind(round(Sim.T*sp_thres):end);%find top (1-sp_thres)% of spikes
+thr_n           = zeros(1,Sim.T);   %extize thrial guess of where spikes are
+thr_n(sp_ind)   = 1;                %make vector of 1's where spikes are
+O.ppr_n         = thr_n;
+
+kern_conv       = false;            %estimated kernel has not converged
+zeroy           = zeros(1,Sim.T);   %vector of zeros for speeding things up
+old_resid_se    = inf;              %init old residual square error for comparison purposes
+
+%% iterate projection pursuit method updating kernel with each iteration
+while kern_conv == false;
+
+
+    % get least mean square filter estimate of time constant for filter
+    A           = mean(dF(sp_ind));
+    tau         = fminunc(@GetTau,0.1);
+
+    % thrialize some stuff
+    ppr_n   = zeroy;                    %estimated spike train
+    kern    = A*exp(-Sim.tvec/tau);     %calcium kernel
+    resid   = [F zeroy];                %residual error (padded with zeros)
+    resid_se= sum(resid.^2);            %residual squared error
+    Mn      = zeroy;                    %estimated spike train filtered with kernel
+
+    sp_conv = false;
+    while sp_conv == false
+        % update spike train
+        k_r_conv    = xcorr(kern,resid);            %find location of next inferred spike
+        k_r_conv    = k_r_conv(Sim.T*2-1:-1:Sim.T); %just take the desired part of the signal
+        [spt ind]   = max(k_r_conv);                %find the max
+
+        new_sp      = zeroy;                        %the new spike vector
+        new_sp(ind) = 1;                            %has a 1 only at the location of the new spike
+        ppr_n(ind)  = 1;                            %update the estimated spike train
+
+        % update Mn
+        new_Mn      = conv(kern,new_sp);            %the new_Mn convolves the kernel with that spike
+        new_Mn      = new_Mn(1:Sim.T);              %scale and crop
+        new_resid   = resid(1:Sim.T) - new_Mn;      %update new residual
+        if resid_se > sum(new_resid.^2)             %if adding a spike REDUCES residual square error
+            resid(1:Sim.T)  = new_resid;            %update the estimate of the residuals
+            resid_se        = sum(resid.^2);        %udate residual square error
+            Mn              = Mn + new_Mn;          %update Mn
+        else                                        %if adding new spike INCREASES residual square error
+            sp_conv=true;                           %stop adding spikes for this kernel
+            new_resid_se = resid_se;                %store best residual achieved with this kernel
+        end
+    end
+
+    if old_resid_se <= new_resid_se                 %if residuals got worse
+        kern_conv = true;                           %converge
+    else                                            %else
+        old_resid_se= new_resid_se;                 %update residual error
+        O.ppr_n     = ppr_n;                        %store list of best spikes
+        O.A         = A;                            %store best A
+        O.tau       = tau;                          %store best tau
+    end
+    sp_ind = find(O.ppr_n);                         %find spike indexes using new kernel
+end
+
+    function err = GetTau(tau)                      %function to estimate time constant
+        temp=conv(A*exp(-Sim.tvec/tau),thr_n);    %convolve exponential with spike times
+        temp=temp(1:Sim.T);                         %discard useless part
+        err=norm((temp-F).^2);                      %compute mse
+    end
+end

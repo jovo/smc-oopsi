@@ -1,0 +1,5 @@
+This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2008 (in press).  
+
+The script entitled "RunDemo.m" is a wrapper script that demo's the abilities of the script.  Comments therein explain each of the parameters, etc.
+
+Contact Joshua Vogelstein (joshuav@jhu.edu) with questions/comments.

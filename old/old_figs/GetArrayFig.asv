@@ -1,0 +1,60 @@
+function GetArrayFig(Sim,R,M,Os,dtSample)
+
+Ncols=length(dtSample);
+Nrows=length(M);
+xs      = [Sim.tvec(Sim.frac*2) 0.5-Sim.dtSample];%[ind*Sim.dt-int ind*Sim.dt+int];
+xmin    = find(Sim.tvec>xs(1),1);
+xmax    = find(Sim.tvec>xs(2),1)+Sim.dt;
+xind    = [xmin:xmax];
+
+gray=[0.75 0.75 0.75];
+
+col=[0 0 1; 0 .5 0; 1 0 0; 0 1 1; 1 0 1; 1 .5 0; 1 .5 1];
+ccol=col+.8; ccol(ccol>1)=1;
+ind=Sim.K:-1:1;
+
+for i=1:Ncols
+    for n=1:Nrows
+        cmin(i,n)=min(M(n,i).Cbar-sqrt(M(n,i).Cvar));
+        cmax(i,n)=max(M(n,i).Cbar+sqrt(M(n,i).Cvar));
+    end
+end
+cmin=min(cmin(:));
+cmax=max(cmax(:));
+
+
+figure(3), cla, clf,
+j=0;
+for i=1:Ncols
+    Sim.dtSample= dtSample(i);
+    Sim.K_o     = Sim.Nsec/Sim.dtSample;                %number of observations
+    Sim.frac    = Sim.dtSample/Sim.dt;                  %# of samples per observation
+    for n=1:Nrows
+        O  = Os{n,i}.*repmat([NaN*ones(1,Sim.frac-1) 1],1,Sim.K_o);
+        j=(Nrows-n)*(Ncols)+(Ncols-i+1);
+        subplot(Nrows,Ncols,j), cla, hold on
+
+        h=fill([Sim.tvec Sim.tvec(ind)],([M(n,i).Cbar-sqrt(M(n,i).Cvar) M(n,i).Cbar(ind)+sqrt(M(n,i).Cvar(ind))]-cmin)/(cmax-cmin)+1,ccol(1,:));
+        set(h,'edgecolor',ccol(1,:))
+        plot(Sim.tvec,(M(n,i).Cbar-cmin)/(cmax-cmin)+1,'linewidth',2,'color',col(1,:))
+        plot(Sim.tvec,(O-cmin)/(cmax-cmin)+1,'ok','LineWidth',2)
+        plot(Sim.tvec,(R.C-cmin)/(cmax-cmin)+1,'color',gray,'LineWidth',2)
+        plot(Sim.tvec,ones(size(Sim.tvec)),'k')
+
+        stem(Sim.tvec,R.I,'Marker','none','Color',gray,'LineWidth',2)
+        BarVar=M(n,i).Ibar+M(n,i).Ivar;
+        BarVar(BarVar>1)=1;
+        stem(Sim.tvec,BarVar,'Marker','none','Color',ccol(1,:),'LineWidth',2)
+        stem(Sim.tvec,M(n,i).Ibar,'Marker','none','Color',col(1,:),'LineWidth',2)
+        axis([Sim.tvec(1) Sim.tvec(end-Sim.frac*2) 0 2])
+        if n~=Nrows
+            set(gca,'XTickLabel',[]), 
+        end
+        set(gca,'YTickLabel',[]), 
+    end
+end
+
+fig=figure(3);
+bgr=0.5*[7 7];
+set(fig,'PaperPosition',[0 11-bgr(2) bgr]);
+print -depsc C:\D\Research\liam\SMC_EM_GLM\array;

@@ -1,0 +1,21 @@
+function O = GetThrSp(F,ex_n_sp)
+
+% intialize spike finder
+dF              = diff(F);          %get dF
+[sdF ind]       = sort(dF);         %sort dF
+sp_thres        = 1-ex_n_sp/Sim.T;  %threshold based on expected number of spikes
+O.sp_ind        = ind(round(Sim.T*sp_thres):end);%find top (1-sp_thres)% of spikes
+thr_n           = zeros(1,Sim.T);   %extize thrial guess of where spikes are
+thr_n(sp_ind)   = 1;                %make vector of 1's where spikes are
+
+% get least mean square filter estimate of time constant for filter
+O.A             = mean(dF(O.sp_ind));
+O.tau           = fminunc(@GetTau,0.1);
+
+    function err = GetTau(tau)                      %function to estimate time constant
+        temp=conv(A*exp(-Sim.tvec/tau),thr_n);      %convolve exponential with spike times
+        temp=temp(1:Sim.T);                         %discard useless part
+        err=norm((temp-F).^2);                      %compute mse
+    end
+
+end

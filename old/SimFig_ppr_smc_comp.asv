@@ -1,0 +1,194 @@
+% this m-file generates some simulated data and then compares various
+% algorithms for inferring calcium and spike times.  in particular, we
+% start with:
+%
+% 1) dF/F and threshold
+% 2) projection pursuit regression
+
+%% start function
+clear; clc;
+
+[Sim P] = InitializeStuff;
+
+%% set simulation parameters
+Sim.Nsec    = 2;                       %# of sec
+Sim.freq    = 5;                        %not intermittent
+Sim.T       = round(Sim.Nsec/Sim.dt);   %total # of steps (round deals with numerical error)
+Sim.T_o     = round(Sim.T/Sim.freq);    %number of observations (round deals with numerical error)
+Sim.tvec    = Sim.dt:Sim.dt:Sim.Nsec;   %time vector
+Sim.M       = 1;                        %# spike history terms
+Sim.StimDim = 1;                        %# stimulus dimenstions
+Sim.pf      = 1;
+Sim.x       = ones(Sim.StimDim,Sim.T);  %stimulus
+
+epsilon_c   = P.sigma_c*sqrt(Sim.dt)*randn(1,Sim.T);%generate noise on calcium
+rate        = 15;                       %desired firing rate in the simuation
+P.k         = log(-log(1-rate*Sim.Nsec/Sim.T)/Sim.dt);%constant to set baseline firing rate
+sp_thres    = exp(-exp(P.k)*Sim.dt);    %expected firing rate
+ex_n_sp     = 5;%Sim.T*(1-sp_thres);       %expected # of spikes
+P.C_0       = 0.0;                      %resting calcium level
+P.C_init    = P.C_0;                    %initial calcium
+% P.gamma     = P.gamma*2;
+% P.zeta      = P.zeta*2;
+
+
+%% generate data
+% R.n         = zeros(1,Sim.T);           %spike times
+% R.C         = P.C_init*ones(1,Sim.T);   %thrialize calcium
+% R.n(spt)    = 1;                        %force spikes
+% for t=2:Sim.T                           %update calcium
+%     R.C(t)  = (1-P.a)*R.C(t-1) + P.A*R.n(t) + P.a*P.C_0 + epsilon_c(t);
+% end
+% % R.F         = R.C + .1*randn(1,Sim.T);
+% F_mu        = P.alpha*Hill_v1(P,R.C)+P.beta;    %compute E[F_t]
+% F_var       = P.gamma*Hill_v1(P,R.C)+P.zeta;    %compute V[F_t]
+% R.F         = F_mu+sqrt(F_var).*randn(1,Sim.T); %add noise to observations
+% R.F(R.F<0)  = eps;                              %observations must be non-negative
+R           = smc_em_bern_real_exp_v5(Sim,P);
+F           = R.F(Sim.freq:Sim.freq:Sim.T);
+
+%% get inferred spikes
+F               = InvHill(F,P.n,P.k_d);       %invert hill equation
+O               = ppr_lin_intermittent2(F,Sim.dt,Sim.freq,ex_n_sp);
+
+%% do smc stuff
+% smc-em estimated spike train and compute error
+Enew        = P;
+Enew.A      = O.A;
+Enew.tau_c  = O.tau;
+Sim.Cparams = true;
+Sim.Mstep   = true;
+Enew.lik    = inf;
+minlik      = inf;
+i           = 0;
+minliki     = i;
+
+ErrNewN     = norm([Enew.k; Enew.omega]-[P.k; P.omega]);
+ErrOldN     = ErrNewN;
+dthetaN     = inf;
+Sim.conv    = false;
+
+while Sim.conv==false;
+    [S M]   = smc_em_bern_FoBaMo_v5(Sim,R,Enew);
+    Eold    = Enew;
+    Enew    = smc_em_bern_mstep_v2(Sim,S,M,Enew);
+    if Enew.lik<minlik
+        minlik=Enew.lik;
+        minliki=i;
+    end
+    i       = i+1;
+
+    ErrOldN = ErrNewN;
+    ErrNewN = norm([Enew.k; Enew.omega]-[P.k; P.omega]);
+    dthetaN = norm([Enew.k; Enew.omega]-[Eold.k; Eold.omega])/norm([Eold.k; Eold.omega]);
+
+    fprintf('\nIteration #%g,  N error=%g, lik=%g, dlik=%g, derrN=%g, dthetaN=%g\n',i,ErrNewN,Enew.lik,Enew.lik-Eold.lik,ErrOldN-ErrNewN,dthetaN)
+    for kk=1:Sim.StimDim
+        fprintf('\nest=%g, true=%g',Enew.k(kk),P.k(kk))
+    end
+    fprintf('\nomega: est=%g, true=%g',Enew.omega,P.omega)
+    %             figure(2), plot([Enew.k; Enew.omega],'b'), drawnow
+    if i>Sim.MaxIter || dthetaN<.005 || i>minliki+1
+        Sim.conv=true;
+        if ErrNewN>ErrOldN
+            E=Eold;
+        else
+            E=Enew;
+        end
+%         figure(4), plot([E(nn,k).k; E(nn,k).omega],'b','linewidth',2), drawnow
+%         save('M_params','Sim','R','P','M','E')
+    end
+end
+
+
+% [S M]           = smc_em_bern_FoBaMo_v5(Sim,R,P);   %do forward-backward and get moments
+
+%% generate smoothing kernel and compute errors between true and estimated
+% spike trains
+gauss_smoothT    = exp(-((linspace(-5,5,Sim.T)/.05).^2)); %smoothing gaussian kernel
+gauss_smoothTo   = exp(-((linspace(-5,5,Sim.T_o)/.1).^2)); %smoothing gaussian kernel
+smooth_real_n   = conv2(R.n,gauss_smoothT,'same');       %tru spike train smoothed
+
+
+% use dF and threshold method to find spike times, and smooth
+dF              = diff(R.F);                            %get dF
+[sdF ind]       = sort(dF);                             %sort dF
+sp_thres        = 1-ex_n_sp/Sim.T;                      %threshold based on expected number of spikes
+sp_ind          = ind(round(Sim.T*sp_thres):end);       %find top (1-sp_thres)% of spikes
+thr_n           = zeros(1,Sim.T);                       %extize thrial guess of where spikes are
+thr_n(sp_ind)   = 1;                                    %make vector of 1's where spikes are
+smooth_thr_n    = conv2(thr_n,gauss_smoothT,'same');     %smooth spike train with gaussian
+thr_errs        = (smooth_real_n-smooth_thr_n).^2;
+thr_mean        = mean(thr_errs);                       %compute mse
+thr_var         = var(thr_errs)*20;                     %compute var
+
+% smooth ppr estimated spike train and compute error
+smooth_ppr_n    = conv2(O.ppr_nT,gauss_smoothT,'same');
+ppr_errs    = (smooth_real_n-smooth_ppr_n).^2;
+ppr_mean    = mean(ppr_errs);                       %compute mse
+ppr_var     = var(ppr_errs)*20;                     %compute var
+
+% smooth smc estimated spike train and compute error
+smooth_smc_n    = conv2(M.nbar,gauss_smoothT,'same');       %same as above but for smc-em spike train
+smc_errs        = (smooth_real_n-smooth_smc_n).^2;
+smc_mean        = mean(smc_errs);
+smc_var         = var(smc_errs)*20;
+
+%%
+% plot actual and inferred spikes and smoothed trains
+figure(5), clf, nrows1=5; gray=[0.75 0.75 0.75]; i=0;
+
+maxF = ceil(max(F)*100)/100;
+maxC = ceil(max(R.C)*100)/100;
+
+%fluorescence
+i=i+1;
+subplot(nrows1,1,i), hold on,
+plot(Sim.tvec(Sim.freq:Sim.freq:Sim.T),R.F(Sim.freq:Sim.freq:Sim.T),'.','color','k'), ylabel('F'), axis('tight')
+ylab=ylabel([{'$F_t$'};{'(a.u.)'} ],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+set(gca,'XTickLabel',[])
+axis([0 Sim.Nsec 0 maxC])
+
+% calcium
+i=i+1;
+subplot(nrows1,1,i), hold on,
+plot(Sim.tvec, R.C,'color',gray,'linewidth',2)
+ylab=ylabel([{'[Ca$^{2+}]_t$'};{'($\mu$M'} ],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+set(gca,'XTickLabel',[])
+axis([0 Sim.Nsec 0 maxF])
+
+%actual and smoothed spike train
+i=i+1;
+subplot(nrows1,1,i), hold on, bar(Sim.tvec,R.n,'FaceColor',gray,'EdgeColor',gray), ylabel((sum(R.n))),
+subplot(nrows1,1,i), plot(Sim.tvec, smooth_real_n,'color',gray,'linewidth',2), hold off, axis('tight')
+ylab=ylabel([{'Real'};{'Spike Train'} ],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+set(gca,'XTickLabel',[])
+
+%ppr guess of spike train (and smoothed)
+i=i+1;
+subplot(nrows1,1,i), hold on, bar(Sim.tvec,O.ppr_nT,'FaceColor','b','EdgeColor','b'), ylabel((sum(O.ppr_nT)))
+subplot(nrows1,1,i), plot(Sim.tvec, smooth_ppr_n,'b','linewidth',2), hold off, axis('tight')
+title(['MSE of smoothed = ', num2str(round(ppr_mean*100)/100), '+/-', num2str(round(ppr_var*100)/100)])
+ylab=ylabel([{'PPR'}; {'Spike Train'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+set(gca,'XTickLabel',[])
+
+%smc guess of spike train (and smoothed)
+i=i+1;
+subplot(nrows1,1,i), hold on, bar(Sim.tvec,M.nbar,'FaceColor','g','EdgeColor','g'), ylabel((sum(M.nbar)))
+subplot(nrows1,1,i), plot(Sim.tvec, smooth_smc_n,'g','linewidth',2), hold off, axis('tight')
+title(['MSE of smoothed = ', num2str(round(smc_mean*100)/100), '+/-', num2str(round(smc_var*100)/100)])
+ylab=ylabel([{'SMC'};{'Spike Train'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+xlabel('Time (sec)')
+
+%%
+fig=figure(5);
+wh=[5 5];   %width and height
+set(fig,'PaperPosition',[0 11-wh(2) wh]);
+print -depsc C:\D\working_copies\neur_ca_imag\trunk\janelia_talk\ppr_smc_comp
+
+[h,p] = ttest(ppr_errs,smc_errs)

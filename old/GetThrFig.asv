@@ -1,0 +1,79 @@
+% plot actual and inferred spikes and smoothed trains
+figure(1), clf, nrows1=4; gray=[0.75 0.75 0.75]; 
+
+%actual and smoothed spike train
+subplot(nrows1,1,1), hold on, bar(Sim.tvec,R.n,'FaceColor',gray,'EdgeColor',gray,'BarWidth',2)
+% subplot(nrows1,1,i), plot(Sim.tvec, smooth_real_n,'color',gray), hold off, axis('tight')
+ylab=ylabel([{'$n_t$'}; {'($\#$)'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+axis('tight')
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+set(gca,'XTickLabel',[],'YTick',[0 1])
+
+% calcium
+subplot(nrows1,1,2), hold on,
+plot(Sim.tvec, R.C,'color',gray,'linewidth',2)
+ylab=ylabel([{'$[\textrm{Ca}^{2+}]_t$'}; {'($\mu$ M)'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+% ylab=ylabel({'[Ca^2^+]_t';'\mu M'},'Interpreter','Latex'),
+axis('tight'), %legend('real','ppr','Location','EastOutside')
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%
+set(gca,'XTickLabel',[])%,'YTick',[0 1])
+set(gca,'YTickLabel',[0 .2],'YTick',[0 .2])
+
+%fluorescence
+subplot(nrows1,1,3), hold on,
+plot(Sim.tvec(Sim.freq:Sim.freq:Sim.T),R.F(Sim.freq:Sim.freq:Sim.T),'.','color','k'), 
+ylab=ylabel([{'$F_t$'}; {'(a.u.)'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+axis([0 5 0 .2])
+set(gca,'YTickLabel',[0 .2],'YTick',[0 .2])
+xlabel('Time (sec)')
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%
+
+%dF and threshold
+dF          = diff(F);    %get dF
+[sdF ind]   = sort(dF);     %sort dF
+subplot(nrows1,1,4), hold on, 
+plot(Sim.tvec(Sim.freq:Sim.freq:Sim.T-1),dF,'.-','color','k'), 
+plot(Sim.tvec,sdF(round(Sim.T_o*sp_thres)),'k'), 
+set(gca,'YTick',[-.1 .1 ],'XTickLabel',[])
+axis([0 5 -.1 .15])
+box off
+ylab=ylabel([{'$dF_t$'}; {'(a.u.)'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%
+
+print -depsc C:\D\working_copies\neur_ca_imag\trunk\janelia_talk\thr2
+
+figure(2), clf, Nrows=2; Ncols=2;
+
+%actual and smoothed spike train
+subplot(Nrows,Ncols,1), hold on, bar(Sim.tvec,R.n,'FaceColor',gray,'EdgeColor',gray,'BarWidth',2)
+subplot(Nrows,Ncols,1), plot(Sim.tvec, smooth_real_n,'color',gray), hold off, axis('tight')
+ylab=ylabel([{'True'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+axis('tight')
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+set(gca,'XTickLabel',[],'YTick',[0 1])
+
+% dF/F and threshold guess of spike train (and smoothed)
+subplot(Nrows,Ncols,3), hold on, bar(Sim.tvec,thr_n,'FaceColor','r','EdgeColor','r'), ylabel((sum(thr_n)))
+subplot(Nrows,Ncols,3), plot(Sim.tvec, smooth_thr_n,'r'), hold off, axis('tight')
+ylab=ylabel([{'dF and'}; {'threshold'}],'Interpreter','latex');%,'VerticalAlignment','middle');%,'FontName','Times New Roman');
+axis('tight')
+set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')%,'color',col(2,:),'fontsize',yfs);%,'Interpreter','latex','FontName','Arial')
+set(gca,'XTickLabel',[],'YTick',[0 1])
+
+% 
+% % %dF/F and threshold guess of spike train (and smoothed)
+% % subplot(nrows1,1,5), hold on, bar(Sim.tvec,O3.ppr_n,'FaceColor','r','EdgeColor','r'), ylabel((sum(O3.ppr_n)))
+% % subplot(nrows1,1,5), plot(Sim.tvec, smooth_ppr_n3,'r'), hold off, axis('tight')
+% % title(['dF/F and threshold spikes and mse of smoothed = ', num2str(ppr_mean3), '+/-', num2str(ppr_var3)])
+% 
+% %ppr guess of spike train (and smoothed)
+% i=i+1;
+% subplot(nrows1,1,i), hold on, bar(Sim.tvec,O.ppr_nT,'FaceColor','b','EdgeColor','b'), ylabel((sum(O.ppr_nT)))
+% subplot(nrows1,1,i), plot(Sim.tvec, smooth_ppr_n,'b'), hold off, axis('tight')
+% title(['projection pursuit spikes and mse of smoothed = ', num2str(ppr_mean), '+/-', num2str(ppr_var)])
+% 
+% %smc guess of spike train (and smoothed)
+% i=i+1;
+% subplot(nrows1,1,i), hold on, bar(Sim.tvec,M.nbar,'FaceColor','g','EdgeColor','g'), ylabel((sum(M.nbar)))
+% subplot(nrows1,1,i), plot(Sim.tvec, smooth_smc_n,'g'), hold off, axis('tight')
+% title(['smc-em spikes and mse of smoothed = ', num2str(smc_mean), '+/-', num2str(smc_var)])

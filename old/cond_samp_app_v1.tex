@@ -1,0 +1,187 @@
+%\documentclass{article}
+%\usepackage{amsmath}
+%\usepackage{a4wide}
+%\providecommand{\ve}[1]{\boldsymbol{#1}}
+%\newcommand{\thetn}{\ve{\theta}}
+%\newcommand{\p}{P_{\thetn}}
+%\title{k-mixture Conditional Sampler}
+%\begin{document}
+%\maketitle
+
+More efficient sampling can be achieved by using a sampling distribution that explicitly considers the observations.  In particular, one can sample conditioned on the \emph{next} observation.  Thus, if $u$ is the time of the previous observation, and $v$ is the time of the next observation, for all $s \in(u,v]$, one would like to define $\q$ as $\p[\ve{H}_s|\ve{H}_{s-1}^{(i)},O_v]$, which may be expanded:
+
+\begin{multline} \label{eq:XO_opt}
+%\begin{split}
+\p[\ve{H}_s|\ve{H}_{s-1}^{(i)},O_v] = \p [\{\ve{h},n,C\}_s | \{\ve{h},n,C\}_{s-1}^{(i)}, F_v]
+\\ = \frac{1}{Z} \p \big[ \ve{h}_s | \ve{h}^{(i)}_{s-1}, n_{s-1}^{(i)} \big] \p \big[ n_s | \ve{h}^{(i)}_{s} \big] \p \big[ C_s | C^{(i)}_{s-1}, n_s^{(i)} \big] \p \big[ F_v | C_s \big]
+%\end{split}
+\end{multline}
+
+\noindent where the only difference between \eqref{eq:XO_opt} and \eqref{eq:NO_opt} is the presence of the future observation probability,  $\p[F_v | C_s]$.  Thus, this future observation probability must be computed for all $s \in(u,v]$.  The idea for computing this future observation probability is depicted in Figure \ref{fig:pf}\textbf{(B)}.  At time $v$ (the time of the next observation), we have a Gaussian distribution governing where the calcium may be, centered at the observation value (this follows from \eqref{eq:F_t}) (black line at $v$, $+$ marks the mean). In this case
+
+\begin{align}
+\p[F_v | C_s] = \mathcal{N}[C_s; F_v, \sigma_F^2]
+\end{align}
+
+\noindent which follows from \eqref{eq:F_t} and the fact that $\mathcal{N}[x;\mu,\sigma^2]=\mathcal{N}[\mu;x,\sigma^2]$ (see Proposition \ref{prop:switch} for proof).  At $v-1$, the neuron could either have spiked or not.  If the neuron did not spike, for the calcium to be where it is at time $v$, the calcium should do the inverse of decay (remember that the recursion goes backwards).  However, if the neuron did spike, the calcium should be $\beta$ \emph{below} its value at time $v$.  In either case, because the noise on the calcium transitions is Gaussian, the distribution maintains its Gaussianity, and slightly increases its variance.  Thus, at time $v-1$, the distribution of calcium is a \emph{mixture of Gaussians}.  At $v-1$, we have a \emph{2-component mixture}, one component for $n_{v-1}=1$ and one for $n_{v-1}=0$ (black line at $v-1$, $+$'s mark the means for the 2 components). The component coefficient (probability of being in that component), $a_{n,v-1}$ is simply the expected probability of spiking or not, $E[n_{v-1}]$. When no spike history terms are present, this expectation may be computed exactly.  For instance, the expected probability of spiking at time $v-1$ is
+
+\begin{align} \label{eq:E[a_1]}
+a_{1,v-s} = 1-e^{-f(b+\ve{k}'\ve{x}_{v-1})dt}
+\end{align}
+
+\noindent and the expected probability of not spiking is simply $a_{0,v-s}=1-a_{1,v-s}$.  When spike history terms are present, $f(\cdot)$ would also be a function of $\ve{h}_{v-1}$, which has not yet been sampled (because $v-1>s$).  We therefore must recursively approximate the expected value for each spike history term using
+
+\begin{align} \label{eq:E[h]}
+%\begin{split}
+E[h_{lt}] &= E[d_{hl} h_{l,t-1} + n_{t-1} + \varepsilon_{ht}] = d_{hl} E[h_{l,t-1}] + E[n_{t-1}]
+%\end{split}
+\end{align}
+
+\noindent for all $t\in(u,v)$. Then, we let
+
+\begin{align} \label{eq:E[a_1h]}
+a_{1,t} = E[n_{t}=1] \approx 1-e^{-f(b+\ve{k}'\ve{x}_s + \ve{\omega}'E[\ve{h}_s])dt}
+\end{align}
+
+\noindent and $a_{0,t}=1-a_{1,t}$. By iterating between \eqref{eq:E[h]} and \eqref{eq:E[a_1h]} for $t\in(u,v)$, we get the expected probability of the neuron spiking at any time.  We may then plug $a_{n,v-1}$ into the backward step:
+
+\begin{align} \label{eq:mix1}
+\p[F_v | C_{v-1}] = \sum_{n=0,1} a_{n,v-1} \int \p[F_v | C_v] \p[C_v | C_{v-1}, n_v=n] dC_v
+\end{align}
+
+\noindent where
+
+\begin{align}
+\p[C_s | C_{s-1}, n_s=n] =
+\begin{cases}
+\mathcal{N}[C_s; d_c C_{s-1} + \beta n_s, \sigma_c^2 dt] & \text{if } n_s=1\\
+\mathcal{N}[C_s; d_c C_{s-1}, \sigma_c^2 dt] & \text{if } n_s=0
+\end{cases}
+\end{align}
+
+\noindent Evaluating this integral using Proposition \ref{prop:uni_gauss_prod} and Corollaries \ref{cor:z} and \ref{cor:z2} yields
+
+\begin{align}
+\p[F_v | C_{v-1}] = \sum_{n=0,1} a_n \mathcal{N}\left[C_{v-1};\frac{F_v - \beta n}{d_c}, \frac{\sigma_F^2 + \sigma_c^2 dt}{d_c^2}\right]
+\end{align}
+
+\noindent (see Corollary \ref{cor:bact} for derivation). Recursing backward one more step yields a 4-component mixture, as each component in the mixture at $v-1$ could have gotten there either from the neuron spiking or not at time $v-2$ (black line and $+$'s at $v-2$).  The coefficient for each of the 4 components is proportional to the expected probability of having that particular \emph{sequence} of spikes, i.e., at $v-2$, we have 4 possible sequences: $(00)$, $(01)$, $(10)$, and $(11)$ corresponding to no spikes, only spiking at time $v-1$, only spiking at time $v-2$ and spiking at both $v-1$ and $v-2$, respectively.  This suggests that at time $v-s$, there will be a $2^{v-s}$-component mixture, where each component may be indexed by a binary number of length $v-s$. %Thus, introducing the notation $\mathcal{M}[C_{s}; \ve{a}_{s}, \ve{\mu}_{s}, \sigma_{s}^2]$ to indicate the mixture of Gaussians, each of which is a function of $C_{s}$, with component coefficients $\ve{a}_s=[a_1, a_M]$, means $\ve{\mu}_{s}=[\mu_{1,s},\mu_{M,s}]$ and variance $\sigma_{m,s}^2$.  Note that $M$ is the number of components in the mixture, which for this model, equals $2^{v-s}$.  Further note that the variance of all the components of the mixture are identical, as it is independent of whether the neuron spikes.
+Formally, we can apply this intuition to perform a backwards recursion for $\p[F_v | C_s]$:
+
+\begin{align}
+\p[F_v | C_{s-1}] = \sum_{n=0,1} a_n
+\sum_{m=1}^{2^{v-s}} a_{ms} \mathcal{N}\left[C_{s-1}; \frac{\mu_{ms} - \beta n}{d_c}, \frac{\sigma_s^2 + \sigma_c^2 dt}{d_c^2}\right] %= \sum_m^{2^{v-(s-1)}} a_m \mathcal{N}[C_{s-1}; \mu_{ms}, \sigma_s^2]
+\end{align}
+
+\noindent where $m$ indexes one of the $2^{v-s}$ possible spike trains between $s$ and $v$, corresponding to one component of the mixture.  Thus, $a_{ms}$ and $\mu_{ms}$ indicate the component coefficient and mean, respectively, from time $s$, and $\sigma_s^2$ indicates the variance for all the components at time $s$ (they are all equal because they are not a function of whether the neuron spikes).
+%Thus, letting $\mathcal{M}[F_v | C_s, n_{s:v}]$ be the mixture representing $\p[F_v | C_s]$, we can compute it recursively using
+%\begin{align}
+%\p \big[ F_v | C_s \big] = \mathcal{M}[F_v | C_s, n_{s:v}] = \sum_m^{2^{v-s}} a_m \mathcal{N}[C_s; \mu_{ms}, \sigma_{s}^2]
+%\end{align}
+%\noindent where $m$ is the $v-t$-bit binary number indexing each component of the mixture, $a_m$ is the \emph{component weight}, $\mu_{ms}$ is the mean of component $m$ at time $s$, and $\sigma_s^2$ is the variance of each component at time $s$ (they all have equal variance because the calcium noise is independent of everything else).
+
+An interesting observation is that at $v-2$, two of the means seem to be completely overlapping.  In fact, those two components correspond to $(01)$ and $(10)$, i.e., the sequences with exactly one spike.  This follows from the fact that the calcium time constant is much larger than the step size, $\tau_c \gg dt$; therefore, the amount of decay (or rather, inverse decay) in a few time steps is essentially negligible.  One can therefore approximate the two components corresponding to a single spike at $v-2$ into one component by using the following rule:
+
+%\begin{align} \label{eq:mix_approx1}
+%\sum_m a_{ms} \mathcal{N}[C_s; \mu_{ms}, \sigma_s^2] &\approx a_{\m s} \mathcal{N}[C_s, \mu_{\m s}, \sigma_s^2 + \sum_m a_{ms} (\mu_{ms}-\mu_{\m s})^2]
+%\end{align}
+\begin{align} \label{eq:mix_approx1}
+\sum_m a_{m} \mathcal{N}[C_s; \mu_{m}, \sigma^2] &\approx a_{\m} \mathcal{N}[C_s, \mu_{\m}, \sigma^2 + \sum_m a_{m} (\mu_{m}-\mu_{\m})^2]
+\end{align}
+
+\noindent where $a_\m=\sum_m a_m$ and $\mu_{\m}=\sum_m a_{m} \mu_{m}$.  More generally, at any time $v-s$, all the components resulting from the same number of spikes between $s$ and $v$ can be combined into a single component.  One must simply take care to modify the component weights, means, and variances using \eqref{eq:mix_approx1}.  Upon doing so, at time $s$, instead of a mixture with $2^{v-s}$ components, we are left with a mixture of $v-s+1$ components (i.e., one component per possible number of spikes until time $v$):
+%
+%\begin{align}
+%\p \big[ F_v | C_s \big] \approx \mathcal{M}^\ast[F_v | C_s, n_{s:v}] = \sum_{\m}^{v-s+1} a_{\m} \mathcal{N}[C_s; \mu_{\m s}, \sigma_{\m s}^2]
+%\end{align}
+%
+%\noindent where $\m$ indexes each of the components.
+Note that upon making this approximation, each component has a different variance, which should be clear from \eqref{eq:mix_approx1} (each $\m$ component combines different $m$ components).  This approximation drastically reduces the computational load of using the conditional sampler.  For instance, imagine that the frame rate, $f$, is $10$ Hz and the step size, $dt$, is $2$ msec.  In that scenario, without the approximation, there would be up to $v-u=1/(f dt)=50$ time steps between observations, yielding a $2^{50}$ component mixture in the no-approximation situation, versus a $51$ component mixture when using our approximation!  As such, we use this approximation for $\p[F_v | C_s]$ when sampling.  Below, we indicate how one can sample from the conditional sampler for each hidden state, $\ve{h}_s$, $n_s$, and $C_s$.
+
+\paragraph{Sampling Spike Histories}
+
+While one could sample the spike histories conditioned on the observations, because they are functions of $n_{t-1}$, they can simply be sampled from their transition distributions without much loss of efficiency.  Therefore, for each spike history term, we sample from $\p[h_{ls} | h_{l,s-1}]$, which is given by \eqref{eq:samp_h}.
+
+\paragraph{Sampling Spikes}
+
+To sample spikes from \eqref{eq:XO_opt}, one must integrate out the other hidden states, to get a sampling distribution which is a function only of $n_s$.  In particular, we determine $q[n_s]$, the sampling distribution for $n_s$, by integrating \eqref{eq:XO_opt} with respect to $\ve{h}_s$ and $C_s$:
+
+\begin{align}
+\nonumber q[n_s] &\sim \frac{1}{Z} \int d\ve{h}_s  \p \big[ n_s | \ve{h}_s \big] \p \big[ \ve{h}_s | \ve{h}^{(i)}_{s-1}, n_{s-1}^{(i)} \big] \int  \p \big[ C_s | C^{(i)}_{s-1}, n_s \big] \p[F_v|C_s] dC_s
+\\&=\frac{1}{Z} \p \big[ n_s | \ve{h}^{(i)}_s \big] \int \p \big[ C_s | C^{(i)}_{s-1}, n_s \big] \p[F_v | C_s] dC_s
+\end{align}
+
+\noindent where the equality follows from the fact that $\ve{h}_s$ was already sampled. One can compute the above integral using the fact that the integral of a product of Gaussians is again a Gaussian, yielding a Gaussian for each component in the mixture:
+
+\begin{align} \label{eq:Z_s}
+\mathcal{N}_{\m}^{(i)}[n_s, F_v] =
+\frac{1}{\sqrt{2 \pi (\sigma_{\m s}^2 + \sigma_c^2 dt)}} \exp \left\{-\frac{1}{2}\left(\frac{\mu_{\m s}-d_c C_{s-1}^{(i)} + \beta n_s)} {\sigma_{\m s}^2 + \sigma_c^2 dt}\right)^2\right\}
+\end{align}
+
+%\begin{align} \label{eq:Z_s}
+%\mathcal{N}_{\m}^{(i)}[n_s;  F_v] =
+%\frac{1}{\sqrt{2 \pi (\sigma_{\m s}^2 + \sigma_c^2 dt)}} \exp \left\{-\frac{1}{2}\left(\frac{\mu_{\m s}-((1-dt/\tau_c) C_{s-1}^{(i)} + \beta n_s)} {\sigma_{\m s}^2 + \sigma_c^2 dt}\right)^2\right\}
+%\end{align}
+
+\noindent which we compute for $n_s=0$ and $n_s=1$ (see Corollary \ref{cor:bact2}  for a derivation).  Thus, for each particle, one samples from
+
+\begin{align} \label{eq:qn}
+\widehat{q}[n_s]&=\mathcal{B}[n_s; 1-e^{-f(y_t^{(i)}) dt}] \sum_{\m=0}^{v-s} \mathcal{N}_{\m}^{(i)}[n_s, F_v]\\
+q[n_s]&=\frac{\widehat{q}[n_s]}{\sum_{n_s=0,1} \widehat{q}[n_s]}
+\end{align}
+
+\paragraph{Sampling Calcium}
+
+In a similar fashion as done to generate $q[n_s]$, one can marginalize $\ve{h}_s$ and \emph{$n_s$} out of \eqref{eq:XO_opt}, yielding:
+
+\begin{equation} \label{eq:qC}
+\begin{split}
+C_s^{(i)} \sim q[C_s] &= \frac{1}{Z}  \p[F_v | C_s] \p[C_s | C_{s-1}^{(i)}, n_s^{(i)}]
+\\&= \frac{1}{Z}  \sum_{\m=n_s^{(i)}}^{v-s} a_{\m s} \mathcal{N}[C_s; \mu_{\m s}, \sigma_{\m s}^2] \mathcal{N}[C_s; d_c C_{s-1}^{(i)} + \beta n_s^{(i)}, \sigma_c^2 dt]
+\\ &= \frac{1}{Z}  \sum_{\m=n_s^{(i)}}^{v-s} a_{\m s} \mathcal{N}\left[C_s; \mu_{\m s} + d_c C_{s-1}^{(i)} + \beta n_s^{(i)}, \sigma_{c\m s}^2 \right]
+\end{split}
+\end{equation}
+
+\noindent which also follows from Proposition \ref{prop:uni_gauss_prod} and Corollary \ref{cor:z} (and is derived in Corollary \ref{cor:bact3}), and
+
+\begin{align}
+\sigma_{c\m s}^{-2} &= \sigma_{\m s}^{-2} + (\sigma_c dt)^{-2}\\
+\mu_{c\m s}^{(i)} &=\sigma_{c\m s}^2 \left( \frac{\mu_{\m s}} {\sigma_{\m s}^2} + \frac{(1-dt/\tau_c) C_{s-1}^{(i)} + \beta n_s^{(i)}}{\sigma_c^2 dt}\right)
+\end{align}
+
+To sample from this mixture, one first samples a component according to $a_\m$, and then samples from the Gaussian corresponding to that component.  Note, however, that the sum in \eqref{eq:qC} starts at $n_s^{(i)}$, because if $n_s^{(i)}=1$, then the component corresponding to \emph{zero} spikes between $s$ and $v$ should not be considered for that particle.
+
+\paragraph{Computing the Weights}
+
+At each time step, the weights are updated according to \eqref{eq:SIS}.  Expanding \eqref{eq:SISa} for the conditional sampler results in
+
+\begin{align} \label{eq:cond_w}
+\widetilde{w}_s^{(i)} &= \frac{\p\big[O_s | \ve{H}_s^{(i)}\big]
+\p\big[n_s^{(i)} | \ve{h}_{s-1}^{(i)}\big] \p\big[C_s^{(i)} | C_{s-1}^{(i)}, n_s^{(i)}\big] w_{s-1}^{(i)}}{q\big[n_s^{(i)}\big] q\big[C_s^{(i)}\big]}
+\end{align}
+
+\noindent because $\p[\ve{h}_s^{(i)} | \ve{h}_{s-1}^{(i)}]$ cancels from the numerator and denominator.  At observation times, one resamples if $\widehat{N_{eff}}$ is less than some threshold (usually taken to be $N/2$), where $\widehat{N_{eff}}$ is given by
+
+\begin{align}
+\widehat{N_{eff}}^{-1} = \sum_{i=1}^N w_t^{(i)}
+\end{align}
+
+\noindent which indicates whether too much of the weight is centered on too few particles\cite{Rubin88}.  Table \ref{tab:back} provides pseudocode for implementing the conditional particle filter, which can act as the forward step in the SMC-EM algorithm.
+
+\begin{table}[h]
+\caption{Pseudocode for Conditional Sampling}
+\label{tab:back}
+\begin{enumerate}
+\item If $s \in \mathcal{T}_o$, update the approximate observation distribution, $\mathcal{M}^\ast[F_v | C_s, n_{s:v}]$, for $s \in (u,v]$.
+\item For each particle, $i\in[1, N]$, at \emph{every} time step, update each state:
+    \begin{enumerate}
+    \item For $l\in [1, L]$, sample $h_{ls}^{(i)} \sim q[h_{ls}]$ using \eqref{eq:samp_h}
+    \item Compute $q[n_s]$ for $n_s=0$ and $n_s=1$ using \eqref{eq:qn} and then sample $n_s^{(i)} \sim q[n_s]$
+    \item Compute $q[C_s]$ using \eqref{eq:qC} then sample $C_s^{(i)} \sim q[C_s]$
+    \end{enumerate}
+\item For each particle, $i=\in[1,N]$, at every time step, update weights, $w_s^{(i)}$, using \eqref{eq:cond_w}
+\item At every \emph{observation} time step, $s \in \mathcal{T}_o$, stratified resample if $\widehat{N_{eff}}<N/2$.
+\end{enumerate}
+\end{table}
+
+%\end{document} 

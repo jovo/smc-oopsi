@@ -1,0 +1,201 @@
+n=1;
+figure(2), cla, clf,
+
+gray    = [0.75 0.75 0.75];         %define gray
+col     = [1 0 0; 0 .5 0];          %define colors for mean
+ccol    = col+.8; ccol(ccol>1)=1;   %define colors for std
+
+O           = R.F.*repmat([NaN*ones(1,Sim.freq-1) 1],1,Sim.T_o);%let O be only observations at sample times
+ONaNind     = find(~isfinite(O));
+Oind        = find(isfinite(O));
+O(ONaNind)  = [];
+finv        = ((P.k_d.*(P.beta-O))./(O-P.beta-P.alpha)).^(1/P.n);
+
+nind    = find(R.n);                %find spike times
+nind    = nind(n);
+xmin    = Oind(find(Oind>nind,1)-1)-1;
+xmax    = Oind(find(Oind>nind,1))+1;
+xs      = Sim.tvec([xmin xmax]);%set the limits of the x-axis
+xind    = xmin:xmax;                %indices of x-axis
+ind     = Sim.T:-1:1;               %inverse index for 'fill' plots
+
+%get min and max of calcium to normalize within plots
+
+
+cshift=inf;
+for i=1:2
+    cmin(i) = min(min(R.C(xind)),min(min(S{i}.C(:,xind))));
+    cmax(i) = max(max(R.C(xind)),max(max(S{i}.C(:,xind))));
+    hmin(i) = min(min(P.omega*R.h(xind)),min(min(P.omega*S{i}.h(:,xind))));
+    hmax(i) = max(max(P.omega*R.h(xind)),max(max(P.omega*S{i}.h(:,xind))));
+    cshift  = min(min(min(S{i}.C(:,xind))),cshift);
+    M(i).hbar = sum(S{i}.w_b.*S{i}.h,1);
+    M(i).hvar = sum((repmat(M(i).hbar,Sim.N,1)-S{i}.h).^2)/Sim.N;
+end
+cmin    = min(cmin(:));
+cmax    = max(cmax(:));
+cdiff   = cmax-cmin;
+
+hmin    = min(hmin(:));
+hmax    = max(hmax(:));
+hdiff   = hmax-hmin;
+
+for i=1:2
+    C{i}=(S{i}.C(:,xind)-cmin)/cdiff;
+    hh{i}=(P.omega*S{i}.h(:,xind)-hmin)/hdiff;
+end
+
+
+%get forward means and variances
+for i=1:2
+    fCbar(i,:) = sum(S{i}.w_f.*S{i}.C,1);
+    fnbar(i,:) = sum(S{i}.w_f.*S{i}.n,1);
+    fnvar(i,:) = sum((repmat(fnbar(i,:),Sim.N,1)-S{i}.n).^2)/Sim.N;
+end
+
+% set subfig sizes
+l1  = .1;      %left of 1st col
+w   = .41;      %width of subfigs
+b   = .22;      %bottom of subfigs
+h   = .3;       %height of subfigs
+b2  = b+h+.05;  %bottom of 2nd row
+l2  = .05+l1+w; %left of second col
+fs  = 12;       %default font size
+yfs = fs;       %ylabel font size
+xfs = fs;       %xlabel font size
+titfs = 14;   %title font size
+ticfs = fs;     %tick font size
+texfs = fs;     %text font size
+tl  = [.03 .03];%tick length
+sw  = 5;        %spike width
+bw  = .3;
+bw2 = .0015;
+xticks = xs(1):Sim.dt:xs(2);
+tx  = 1.435;
+ty  = 2.1;
+sp  = 1.2;
+lw  = 2;
+
+Nrows=7;
+Ncols=2;
+AX  = [xs 0 1];
+
+for i=1:2
+
+    %     %% plot particles
+    %     if i==2,                                                                        %top right plot
+    %         subplot('Position',[l1 b w h]), %subplot(2,2,3)
+    %         cla, hold on
+    %         xlabel('Time (sec)', 'fontsize',xfs);
+    %         set(gca,'XTick',xticks,'XTickLabel',[{'u-1'}, {'u'}, {'u+1'}, {'u+2'}, {'v'}, {''}],'TickLength',tl,'fontsize',ticfs,'YTick',[])        %         text(tx,ty,'(C)','fontsize',texfs);
+    %     end
+    %     set(gca,'YTickLabel',[])
+    if i==1
+        ii=[1 3 5];
+    else
+        ii=[9 11 13];
+    end
+
+    % h particles
+    subplot(Nrows,Ncols,ii(1)), cla, hold on
+    plot(Sim.tvec,(P.omega*R.h-hmin)/hdiff,'color',gray,'LineWidth',2)              %plot true calcium
+    for x=1:length(xind)
+        for nn=1:Sim.N
+            plot(Sim.tvec(xind(x)),hh{i}(nn,x)','.','Color',col(i,:),'markersize',50*(S{i}.w_f(nn,x)))                   %plot calcium particles
+        end
+    end
+    plot(Sim.tvec(xind),hh{i}(:,1:length(xind))','Color',col(i,:))
+    set(gca,'YTick',[0 1],'YTickLabel',round([hmin hmax]*100)/100)
+    set(gca,'XTick',Sim.tvec(xind),'XTickLabel',[])
+    axis(AX)
+    if i==1,                                                                        %bottom left
+        title('Particles','fontsize',titfs),
+    end
+    ylabel({'$\omega h_t$ (a.u.)'},'fontsize',yfs,'Interpreter','latex')
+
+%     text(-2.9, 1,['Conditional Sampler'])
+
+    % spike particles
+    subplot(Nrows,Ncols,ii(2)), cla, hold on
+    for x=xind(1)+1:xind(end)
+        bar(Sim.tvec(x),R.n(x),'EdgeColor',gray,'FaceColor',gray,'BarWidth',bw2)%plot true spikes
+        bar(Sim.tvec(x),sum(S{i}.n(:,x))/5,'EdgeColor',col(i,:),'FaceColor',col(i,:),'BarWidth',bw2)                  %plot spike particles
+    end
+    set(gca,'YTick',[0 1],'YTickLabel',[0 1])
+    set(gca,'XTick',Sim.tvec(xind),'XTickLabel',[])
+    axis(AX)
+    %     if i==1,                                                                        %top left plot
+    %         ylab=ylabel([{'Prior Sampler'}; {''}]);
+    %     else
+    %         ylab=ylabel([{'Conditional Sampler'}; {''}]);
+    %     end
+    ylabel({'$n_t$ $(\#)$'},'fontsize',yfs,'Interpreter','latex')
+
+    % calcium particles
+    subplot(Nrows,Ncols,ii(3)), cla, hold on
+    plot(Sim.tvec,(R.C-cmin)/cdiff,'color',gray,'LineWidth',2)              %plot true calcium
+    for x=1:length(xind)
+        for nn=1:Sim.N
+            plot(Sim.tvec(xind(x)),C{i}(nn,x)','.','Color',col(i,:),'markersize',50*(S{i}.w_f(nn,x)))                   %plot calcium particles
+        end
+    end
+    plot(Sim.tvec(xind),C{i}(:,1:length(xind))','Color',col(i,:))
+    set(gca,'YTick',[0 1],'YTickLabel',round((([cmin cmax])-cmin)*100)/100)
+    set(gca,'XTick',Sim.tvec(xind),'XTickLabel',[{''};{'u'}; {''}; {''}; {'v'}])
+    xlabel('Time (sec)', 'fontsize',xfs);
+    ylabel([{'[Ca$^{2+}]_t$ ($\mu$M)'}],'Interpreter','latex','fontsize',yfs)
+    axis(AX)
+
+
+    % h dist
+    subplot(Nrows,Ncols,ii(1)+1), cla, hold on
+    ptiles = GetPercentiles([.25 .75],S{i}.w_b,S{i}.h);
+    hfill=fill([Sim.tvec Sim.tvec(ind)],(P.omega*[ptiles(1,:) ptiles(2,ind)]-hmin)/hdiff,ccol(i,:));
+    set(hfill,'edgecolor',ccol(i,:))
+    plot(Sim.tvec,(P.omega*R.h-hmin)/hdiff,'color',gray,'LineWidth',2)              %plot true calcium
+    plot(Sim.tvec,(P.omega*M(i).hbar-hmin)/hdiff,'linewidth',2,'color',col(i,:))
+    set(gca,'YTick',[0 1],'YTickLabel',[])
+    set(gca,'XTick',Sim.tvec(xind),'XTickLabel',[])
+    axis(AX)
+    if i==1,                                                                        %bottom left
+        title('Inferred Distributions','fontsize',titfs),
+    end
+
+    % spike plot
+    subplot(Nrows,Ncols,ii(2)+1), cla, hold on
+    ptiles = GetPercentiles([.25 .75],S{i}.w_b,S{i}.n);
+    %     BarVar=M(i).nbar+M(i).nvar; BarVar(BarVar>1)=1;
+    bar(Sim.tvec,R.n,'EdgeColor',gray,'FaceColor',gray,'BarWidth',bw)%plot true spikes
+    bar(Sim.tvec,ptiles(2,:),'EdgeColor',ccol(i,:),'FaceColor',ccol(i,:),'BarWidth',bw)%plot true spikes
+    bar(Sim.tvec,M(i).nbar,'EdgeColor',col(i,:),'FaceColor',col(i,:),'BarWidth',bw)%plot true spikes
+    set(gca,'YTick',[0 1],'YTickLabel',[])
+    set(gca,'XTick',Sim.tvec(xind),'XTickLabel',[])
+    axis(AX)
+
+
+    % calcium plot
+    subplot(Nrows,Ncols,ii(3)+1), cla, hold on
+    ptiles = GetPercentiles([.25 .75],S{i}.w_b,S{i}.C);
+    hfill=fill([Sim.tvec Sim.tvec(ind)],([ptiles(1,:) ptiles(2,ind)]-cmin)/cdiff,ccol(i,:));
+    set(hfill,'edgecolor',ccol(i,:))
+    plot(Sim.tvec,(R.C-cmin)/cdiff,'color',gray,'LineWidth',2)
+    plot(Sim.tvec,(M(i).Cbar-cmin)/cdiff,'linewidth',2,'color',col(i,:))
+    %     plot(Oind*Sim.dt,(finv-cmin)/cdiff,'.k','LineWidth',1,'markersize',7)      %plot observations
+    set(gca,'YTick',[0 1],'YTickLabel',[])
+    set(gca,'XTick',Sim.tvec(xind),'XTickLabel',[{''};{'u'}; {''}; {''}; {'v'}])
+    xlabel('Time (sec)', 'fontsize',xfs);
+    axis(AX)
+end
+
+annotation('textbox','String',{'Conditional Sampler'},...
+    'FitHeightToText','on',...
+    'LineStyle','none',...
+    'fontsize',titfs,...
+    'Position',[0.4281 0.4656 0.2398 0.05155]);
+
+
+% print to (color) eps
+fig=figure(2);
+wh=[5 7];
+set(fig,'PaperPosition',[0 11-wh(2) wh]);
+print -depsc C:\D\Research\liam\SMC_EM_GLM\sampl3
