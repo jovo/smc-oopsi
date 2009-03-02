@@ -1,4 +1,7 @@
 /old/*
+/data/*
+/docs/*
 /CodeToSend/*
 *.swp
 *.swo
+

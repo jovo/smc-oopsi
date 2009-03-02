@@ -1,6 +1,6 @@
 % this script fits a cell and prepares parameters for glm-SMC sampler
 clear, clc, fprintf('\nfit cell ')
-fname=['../spatial-filter/TS108_6_003.mat']; fprintf('%s\n',fname)
+fname=['/Users/joshyv/Research/projects/oopsi/spatial-filter/TS108_6_003.mat']; fprintf('%s\n',fname)
 % fname=['../spatial-filter/TS108_6_012.mat']; fprintf('%s\n',fname)
 % fname=['../spatial-filter/FilteredData_D080218a24.mat']; fprintf('%s\n',fname)
 
