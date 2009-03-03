@@ -1,5 +1,4 @@
-This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2008 (in press).  
+This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press).  The repository is organized as follows.  There are two main folders, code and docs.  Unsurprisingly, the code folder has the most recent version of our code.  Any remaining bugs or other fixes to this code will be updated in this folder.  The docs folder contains a preprint of our article, plus the scripts used to make the figures, so that each figure can be reproduced.  Please respect our policy of openness, and operate accordingly.
 
-The script entitled "RunDemo.m" is a wrapper script that demo's the abilities of the script.  Comments therein explain each of the parameters, etc.
 
 Contact Joshua Vogelstein (joshuav@jhu.edu) with questions/comments.
