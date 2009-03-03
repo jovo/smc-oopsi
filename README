@@ -1,4 +1,10 @@
-This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press).  The repository is organized as follows.  There are two main folders, code and docs.  Unsurprisingly, the code folder has the most recent version of our code.  Any remaining bugs or other fixes to this code will be updated in this folder.  The docs folder contains a preprint of our article, plus the scripts used to make the figures, so that each figure can be reproduced.  Please respect our policy of openness, and operate accordingly.
+This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press).  The repository is organized as follows.  There are three main folders, code, data,  and docs.  
+
+1) code contains all the scripts one needs to run our algorithm (as well as our license agreement).
+2) data contains the data used to make each of the figures in from the paper.
+3) docs contains all the files used to make the paper, including code for running the simulations in the paper.
+
+Please respect our policy of openness, and operate accordingly.
 
 
 Contact Joshua Vogelstein (joshuav@jhu.edu) with questions/comments.
