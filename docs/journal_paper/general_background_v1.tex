@@ -1,0 +1,546 @@
+\documentclass{article}
+\input{/Users/joshyv/Research/misc/my_latex_defs}
+\usepackage{geometry}
+\oddsidemargin=0.0in %%this makes the odd side margin go to the default of 1inch
+\evensidemargin=0.0in
+\textwidth=6.5in
+\textheight=9in %%sets the textwidth to 6.5, which leaves 1 for the remaining right margin with 8 1/2X11inch paper
+
+\usepackage[round,numbers,sort&compress]{natbib}
+\usepackage{hyperref}               %for pdfLaTeX
+
+\title{A tutorial on expectation-maximization for nonlinear and/or non-Gaussian state-space models}
+
+\author{Joshua T. Vogelstein$^1$, and Liam Paninski$^2$ \\  $^1$ Department of Neuroscience, Johns Hopkins School of Medicine \\\ $^2$ Department of Statistics and Center for Theoretical Neuroscience, Columbia University}
+ 
+\begin{document}
+\maketitle \tableofcontents \thispagestyle{empty} \newpage
+
+\noindent These Supplementary Materials provide a brief overview of the basic sequential Monte Carlo expectation maximization (SMC-EM) approach that we use in the main text.  First, we describe the problem in terms of a \emph{state-space model}.  Once in this formalism, we show how an \emph{Expectation Maximization} (EM) algorithm can infer the hidden states, along with the model parameters.  Because the standard EM algorithm requires the evaluation of integrals that become intractable for this model, we use an approximation technique called \emph{particle filtering} which sequentially generates Monte Carlo samples (hence, this approach is often referred to as \emph{sequential Monte Carlo} (SMC)), discretizing the state-space, and approximating the problematic integrals by tractable sums. Derivations of each of the equations are provided in the Appendices.
+
+\section{State-Space Modeling}
+
+A state is anything that is time varying. The time varying states may be divided into those that are \emph{hidden} (denoted by $\ve{H}_t)$ wand those that are \emph{observed} (denoted by $\ve{O}_t$).  If the model also adheres to the following two conditions, then it can be considered a state-space model:
+
+\begin{align}
+\pO (\ve{O}_{0:T} | \ve{H}_{0:T}) & = \prod_{t=1}^T \pO(\ve{O}_t | \ve{H}_t) \label{eq:ass1}\\
+\pT (\ve{H}_{0:T}) &= \p(\ve{H}_0) \prod_{t=1}^T \pT(\ve{H}_{t} | \ve{H}_{t-1}). \label{eq:ass2}
+\end{align}
+
+\noindent where $\ve{X}_{0:T} = \{\ve{X}_0, \ldots, \ve{X}_T\}$. Eq. \ref{eq:ass1} defines the \emph{observation distribution} $\pO(\ve{O}_t | \ve{H}_t)$ by asserting that the probability of obtaining the observation at the current time, $\ve{O}_t$, is only a function of the hidden states at that time, $\ve{H}_t$.  This distribution is governed entirely by the \emph{observation parameters}, $\ve{\theta}_o$.  Similarly, Eq. \ref{eq:ass2} defines the \emph{transition distribution} $\pT(\ve{H}_{t} | \ve{H}_{t-1})$, by asserting that the probability of the hidden state at the current time, $\ve{H}_t$ is only a function of the previous value of the hidden state, $\ve{H}_{t-1}$.  This distribution is governed entirely by the \emph{transition parameters}, $\ve{\theta}_{Tr}$.  Fig. \ref{fig} (\textbf{A})  graphically depicts these two assumptions.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1.0\linewidth]{pf_approx}
+\caption{Sequential Monte Carlo Assumptions.  \textbf{(A)} Directed Acyclic Graphical representation of a state-space model. The horizontal dotted line divides the graph between the observed states (above the line) and hidden states (below the line). The graph depicts the conditional dependencies of the model by drawing directed edges (\emph{arrows}) between the nodes (\emph{open circles}). The time step is indicated on the bottom.  For the model in the main text, the observation state is the intermittent fluorescence observations, $F_t$, and the hidden states (\emph{gray ellipses}) are the time-varying intracellular calcium concentration $\Ca_t$ spikes $n_t$, and spike history terms $\ve{h}_t$. Collectively, the hidden states comprise a Markov process. Note that the external input $\ve{x}_t$ operates on the spiking probability. \textbf{(B)} A set of particles (\emph{gray ellipses}) comprise a discrete approximation to the continuous mixture of Gaussians distribution (\emph{black line}). The size of each ellipse corresponds to its weight, $w_t^{(i)}$, and the position corresponds to its value, $\ve{H}_t^{(i)}$.} \label{fig}
+\end{figure}
+
+Taken together, these two assumptions imply that the \emph{complete likelihood}, $\p(\ve{O}, \ve{H})$, i.e., the joint likelihood of the observation and hidden states for \emph{all} time steps, may be simplified:
+
+\begin{align} \label{eq:SSM}
+\p(\ve{O}, \ve{H}) = \pO (\ve{O} | \ve{H}) \pT (\ve{H}) = \prod_{t=0}^T \pO(\ve{O}_t | \ve{H}_t) \pT(\ve{H}_t | \ve{H}_{t-1}),
+\end{align}
+
+\noindent where we use the notation $\ve{X}$ (without a subscript) to indicate a sequence for all time, i.e., $\ve{X}=\ve{X}_{0:T}$.  Eq. \ref{eq:SSM} asserts that the complete likelihood is characterized entirely by the observation and transition distributions (we ignore the initial conditions because they contribute relatively little to this likelihood).\footnote{For the model in the main text, the observed state is the fluorescence observation: $\ve{O}_t=F_t$, the hidden states are the calcium concentrations, spikes, and spike history terms: $\ve{H}_t =\{\Ca_t, n_t,\ve{h}_t\}$. Note that the external stimulus $\ve{x}_t$ is \emph{not} a state.  Rather $\ve{x}_t$ operates on the neuron by modulating the probability of spiking. The observation distribution parameters are $\ve{\theta}_{o}=\{\alpha,\beta,\sigma_F,n,k_d\}$. The transition distribution parameters are $\ve{\theta}_{Tr}=\{ \ve{k},\omega,\tau_h,\sigma_h,\tau,A,\sigma\}$.}
+
+\section{Expectation Maximization for State-Space Models}
+
+An Expectation Maximization (EM) algorithm generally iterates two key operations.  First, EM algorithms compute the sufficient statistics for performing an optimal inference, given any setting of the model parameters (this is called the \emph{Expectation} (or E) step).  Second, EM algorithms provide the maximum likelihood estimates of the parameters, given the above inference (this is called the \emph{Maximization} (or M) step).  More precisely, in the E step one explicitly writes down the expected value of the complete log likelihood, $E_{P_{\theto}(\ve{H} | \ve{O})} \ln \p (\ve{O}, \ve{H})$, in terms of the model states, given the current parameter estimates.  The M step then computes a weighted maximum likelihood estimate of the parameters, given this expectation. The E and M steps  are iterated until the parameters converge \cite{ShumwayStoffer06}. Note that it is the likelihood of the expected value of the complete log likelihood that is guaranteed to converge, not the likelihood of $\p (\ve{O}_t)$.  The E and M step can be formally written as:
+
+\begin{align*}
+\textbf{E step: } \text{Compute } & Q(\thetn,\theto) = E_{P_{\theto}(\ve{H} | \ve{O})} \ln \p (\ve{O},\ve{H}) = \int P_{\theto}(\ve{H} | \ve{O}) \ln \p (\ve{O}, \ve{H}) d\ve{H}\\
+\textbf{M step: } \text{Compute }& \theth = \argmax_{\thetn} Q(\thetn,\theto)
+\end{align*}
+
+\noindent where $\theto$ is the previous EM iteration's parameter estimate, and $\theth$ is the new estimate. The E step may be expanded using Eq. \ref{eq:SSM} (See \cite{Rabiner89} or Appendix \ref{sec:E} for derivation):
+
+\begin{multline} \label{eq:E_HMM}
+Q(\thetn,\theto) = \sum_{t=1}^T \iint
+ P_{\theto} (\ve{H}_t,\ve{H}_{t-1} | \ve{O})  \ln \pT
+(\ve{H}_t |  \ve{H}_{t-1}) d\ve{H}_t d\ve{H}_{t-1} \\
++ \sum_{t=0}^T \int P_{\theto} (\ve{H}_t |  \ve{O}) \ln
+\pO (\ve{O}_t |  \ve{H}_t) d\ve{H}_t.
+\end{multline}
+
+\noindent Note that these integrals need not be evaluated, as we approximate them with sums in the next section. Because the transition and observation distributions are given by the model, completing the E step requires computing both (i) the \emph{pairwise joint conditional distributions} (or pairwise joint conditionals), $ P_{\theto} (\ve{H}_t,\ve{H}_{t-1} | \ve{O})$, and (ii) the \emph{marginal conditional distributions} (or marginal conditionals), $ P_{\theto} (\ve{H}_t |  \ve{O})$.  These distributions can be efficiently computed using a forward-backward approach, originally developed for HMMs (Baum-Welch Algorithm \cite{BaumWeiss70}) and linear-Gaussian state-space models \cite{Kalman60}.  The forward-backward approach proceeds by adopting a forward recursion to compute the distribution of the hidden state at time step $t$, given all \emph{previous} observations, $\p(\ve{H}_t | \ve{O}_{0:t})$, which is referred to as the \emph{forward distribution} (or forward filter).  Upon arriving at the final time step, one iteratively recurses \emph{backward} to compute the pairwise joint and marginal conditionals for each time step $t$, which are conditioned on \emph{all} the observations. The forward recursion uses the following update equation (see \cite{Rabiner89} or Appendix \ref{sec:for} for derivation):
+
+\begin{align}\label{eq:for}
+\p(\ve{H}_t|\ve{O}_{0:t}) = \frac{1}{Z} \pO(\ve{O}_t|\ve{H}_t) %\times \\
+\int \pT(\ve{H}_t|\ve{H}_{t-1}) \p(\ve{H}_{t-1} | \ve{O}_{0:t-1}) d\ve{H}_{t-1},
+\end{align}
+
+\noindent where $Z$ is a normalization constant required to ensure that the forward distribution integrates to unity.  The backward recursion uses the following update equation (see \cite{ShumwayStoffer06} or Appendix \ref{sec:bact} for derivation):
+
+\begin{subequations} \label{eq:back0}
+\begin{align} \label{eq:joint}
+\p(\ve{H}_t, \ve{H}_{t-1} | \ve{O}) &= %\\ \nonumber &
+\p (\ve{H}_t | \ve{O}) \frac{\pT (\ve{H}_t | \ve{H}_{t-1}) \p (\ve{H}_{t-1} | \ve{O}_{0:t-1})}{\int \pT (\ve{H}_t | \ve{H}_{t-1}) \p (\ve{H}_{t-1} | \ve{O}_{0:t-1}) d\ve{H}_{t-1} }
+\\ \label{eq:marg} \p(\ve{H}_{t-1} | \ve{O}) &=  \int \p(\ve{H}_t, \ve{H}_{t-1} | \ve{O}) d\ve{H}_t,
+\end{align}
+\end{subequations}
+
+\noindent yielding the pairwise joint conditionals (Eq. \ref{eq:joint}) and marginal conditionals (Eq. \ref{eq:marg}).  Note that this recursion requires first computing the forward distribution for all $t$, from which the name ``forward-backward'' was derived.
+
+Having the pairwise joint and marginal conditionals from the backward recursion completes the E step, as one can now explicitly write out $\Q$ for this particular model using Eq. \ref{eq:E_HMM}.  Importantly, these conditionals perform a double duty.  First, they are the sufficient statistics for performing the optimal inference.  To see this, note that one could estimate $H_t$ by simply computing the conditional mean,
+
+\begin{align} \label{eq:inf}
+E(H_t) = \int H_t P_{\ve{\theta}}(\ve{H}_t | \ve{O}) dH_t.
+\end{align}
+
+\noindent Second, these pairwise joint and marginal distributions provide the sufficient statistics for computing the maximum likelihood estimators for the model parameters.  For state-space-models, the maximization breaks down into two separate maximizations, one for the transition distribution parameters $\ve{\theta}_{Tr}$, and one for the observation distribution parameters $\ve{\theta}_o$, which follows directly from the expansion in Eq. \ref{eq:E_HMM}.  Therefore, maximizing with respect to the transition distribution parameters requires only the pairwise joint conditionals:
+
+\begin{align}\label{eq:QT}
+\theth_{Tr} = \argmax_{\theta_{Tr}} \sum_{t=1}^T \iint %\\
+P_{\theto} (\ve{H}_t,\ve{H}_{t-1} | \ve{O})  \ln \pT (\ve{H}_t |  \ve{H}_{t-1}) d\ve{H}_t d\ve{H}_{t-1},
+\end{align}
+
+\noindent and maximizing with respect to the observation distribution parameters requires only the marginal conditionals:
+
+\begin{align}\label{eq:QO}
+\theth_o = \argmax_{\theta_o} \sum_{t=1}^T\int %\\
+P_{\theto} (\ve{H}_t | \ve{O})  \ln \pO (\ve{O}_t |  \ve{H}_t) d\ve{H}_t.
+\end{align}
+
+\section{SMC Forward Recursion}
+
+While the EM algorithm for state-space models provides the distributions of interest, the integral in Eq. \ref{eq:for} is often difficult to compute.\footnote{Technically, we could evaluate the integral in Eq. \ref{eq:for} for the state space model in the main text, since the computations involve a conceptually simple mixture of Gaussians.  However, since the number of distributions in the mixture doubles with each time step, evaluating the integral after many time steps becomes computationally intractable.}  Instead, we will use an approximate (SMC) method to perform the forward recursion  \cite{DoucetGordon01, KlaasDoucet05}.  This forces minor modifications to the backward recursion and the M-step.
+
+The SMC idea is quite simple.  Instead of integrating over all possible hidden states $\ve{H}_t$ at each time step, one integrates over some finite set of \emph{particles}, $\{\ve{H}_t^{(1)}, \ldots, \ve{H}_t^{(N)}\}$, intelligently chosen to approximate the entire distribution.  At each time step, each particle has an associated weight, $w_t^{(i)}$, which together comprise the forward distribution approximation:
+
+\begin{align} \label{eq:for_approx}
+\p(\ve{H}_t | \ve{O}_{0:t}) &\approx  \sum_{i=1}^N w_t^{(i)} \delta\big(\ve{H}_t - \ve{H}_t^{(i)}\big),
+\end{align}
+
+\noindent where $\delta(X)$ is the Dirac delta function, taking value one when $X=0$ and zero otherwise (for a proof that as $N \rightarrow \infty$, this approximation becomes exact, and other convergence results, see  \cite{DoucetGordon01}).  The pair $\big(\ve{H}_t^{(i)} ,w_t^{(i)}\big)$ indicates that at time step $t$, the probability of the hidden state taking value $\ve{H}_t^{(i)}$ is $w_t^{(i)}$.  This set of particles and weights then acts as a discrete approximation of the forward distribution, as depicted in Fig. \ref{fig} (\textbf{B}). Substituting $\sum_{j=1}^N w_{t-1}^{(j)} \delta(\ve{H}_{t-1}^{(j)} - \ve{H}_{t-1})$ for $\p(\ve{H}_{t-1} | \ve{O}_{0:t-1})$ in Eq. \ref{eq:for} yields a particle analog to the forward update equation:
+
+%% insert figure 2 here
+
+%\begin{multline}
+\begin{align}\label{eq:MPF}
+w_t^{\ast (i)} = \frac{1}{Z} \pO(\ve{O}_t | \ve{H}_t^{(i)}) %\times \\
+\sum_{j=1}^N \pT(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(j)}) w_{t-1}^{(j)}.
+\end{align} %\end{multline}
+
+\noindent Because the sum in Eq. \ref{eq:MPF} requires computing the transition distribution for each pair of particles, one typically approximates Eq. \ref{eq:MPF} with
+
+%\begin{multline}
+\begin{align}\label{eq:SIS0}
+\bar{w}_t^{(i)} = \frac{1}{Z} \pO(\ve{O}_t | \ve{H}_t^{(i)}) %\times \\
+\pT(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(i)}) w_{t-1}^{(i)},
+\end{align}%\end{multline}
+
+\noindent which is accurate when the transition distribution $\p(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(i)})$ is highly concentrated at $\ve{H}_t^{(i)} = \ve{H}_{t-1}^{(i)}$ (e.g., this is a good approximation when either the time step or transition noise is small). To compute Eq. \ref{eq:SIS0}, one must sample $\ve{H}_t^{(i)}$ from some distribution, which we will call the \emph{sampling distribution}, $\q$, though it is also known as the importance or proposal distribution. An importance sampling argument informs us that upon approximating a distribution by sampling, one must normalize the likelihood by the probability of having sampled that value (see \cite{DoucetGordon01} or Appendix \ref{sec:IS} for justification).  Therefore, one updates the \emph{importance weights} (or weights) using
+
+\begin{subequations} \label{eq:SIS}
+\begin{align} \label{eq:SISa}
+\widetilde{w}_t^{(i)} &= \frac{\pO(\ve{O}_t | \ve{H}_t^{(i)})  \pT(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(i)}) w_{t-1}^{(i)}}{q(\ve{H}_t^{(i)})}  %, \qquad
+\\ w_t^{(i)} &= \frac{\widetilde{w}_t^{(i)}}{\sum_j \widetilde{w}_t^{(j)}}. \label{eq:SISb}
+\end{align}
+\end{subequations}
+
+\noindent If possible, one samples from the so-called optimal sampling distribution, $q\big(\ve{H}_t^{(i)}\big)=\p\big(\ve{H}_t | \ve{H}_{t-1}^{(i)}, \ve{O}_t\big)$.
+
+One final note on the use of SMC algorithms relates to the issue of \emph{resampling}. Because particles are sampled, some may have weights close to zero. When this happens, one can sample particles with replacement according to their weights, a process called resampling.  This tends to drop the unlikely particles and replicate the very likely ones. Although many resampling strategies are available \cite{DoucMoulines05}, we use \emph{stratified resampling} because of its efficiency and simplicity (see Appendix \ref{sec:strat} for details). Upon resampling, all the weights are set to $1/N$. Thus, to complete the SMC approximation to the forward recursion, first initialize a set of $N$ particles to take some reasonable starting value, and assign each an equal weight.  Then, at each time step, (i) update the position (in hidden space) of each particle by sampling from the sampling distribution; (ii) use Eq. \ref{eq:SIS} to compute the weight of each particle; and (iii) resample. One iterates these three steps (together called Sequential Importance Sampling with Resampling \cite{DoucetGordon01}) until arriving at $t=T$, at which time the forward recursion is complete.
+
+\section{SMC Backward Recursion}
+
+Having completed the SMC forward recursion, the SMC approximation to the backward recursion proceeds by substituting these weights into Eq. \ref{eq:back0} to get the particle analog for the backward recursion:
+
+\begin{subequations} \label{eq:part_back}
+\begin{align} \label{eq:part_joint}
+&J^{(i,j)}_{t,t-1} = \p(\ve{H}_t^{(i)}, \ve{H}_{t-1}^{(j)} | \ve{O}) %\\&
+=\p \big(\ve{H}^{(i)}_t | \ve{O}\big) \frac{
+\pT \big(\ve{H}^{(i)}_t | \ve{H}^{(j)}_{t-1} \big)
+w_{t-1}^{(j)}}{\sum_j \pT \big(\ve{H}^{(i)}_t | \ve{H}^{(j)}_{t-1} \big) w_{t-1}^{(j)}}
+\\ \label{eq:part_marg} &M^{(j)}_{t-1} = \p(\ve{H}_{t-1}^{(j)} | \ve{O})
+= \sum_{i=1}^N J^{(i,j)}_{t,t-1},
+\end{align}
+\end{subequations}
+
+\noindent where $J^{(i,j)}_{t,t-1}$ is the pairwise joint likelihood
+of particle $i$ taking value $\ve{H}_t^{(i)}$ at time $t$ and particle
+$j$ taking value $\ve{H}_{t-1}^{(j)}$ at time $t-1$, conditioned on
+\emph{all} the observations.  Similarly, $M_t^{(i)}$ is the marginal
+likelihood of particle $i$ taking value $\ve{H}_t^{(i)}$ at time $t$,
+conditioned on \emph{all} the observations. One therefore completes
+the SMC approximation to the backward recursion by initializing
+$M_T^{(j)}=w_T^{(j)}$ for all $j$, and then recursing \emph{backward}
+using Eq. \ref{eq:part_back} to compute the pairwise joint and marginal
+conditional likelihoods until $t=0$.  At this point, the particle
+approximation of the E step is complete, and one may proceed to the M
+step. Because each forward recursion takes $O(TN)$ time, and each
+backward recursion takes $O(TN^2)$ time (due to the pairwise
+transitions, $\pT \big(\ve{H}^{(i)}_t | \ve{H}^{(j)}_{t-1} \big)$),
+each E step takes $O(TN^2)$ time.  Note that without the approximation
+in Eq. \ref{eq:SIS0}, the forward recursion would take $O(TN^2)$ steps,
+though this could potentially be reduced  \cite{KlaasDoucet05}.
+
+\section{SMC M Step}
+
+Having the particle approximation to marginal and joint conditional distributions, they may be plugged into Eq. \ref{eq:QT} and Eq. \ref{eq:QO} to find the maximum likelihood estimates of the transition distribution and observation distribution parameters
+
+\begin{align} \label{eq:smcQT}
+\theth_{Tr} &= \argmax_{\ve{\theta}_{Tr}} \sum_{t=1}^N\sum_{i,j=1}^N J^{(i,j)}_{t,t-1}  \ln \pT
+(\ve{H}_t^{(i)} |  \ve{H}_{t-1}^{(j)}) \\ \label{eq:smcQO}
+\theth_o &= \argmax_{\ve{\theta}_o}  \sum_{t=1}^N \sum_{i,j=1}^N M^{(i)}_t \ln \pO (\ve{O}_t | \ve{H}_t^{(i)}),
+\end{align}
+
+\noindent completing one SMC-EM iteration.  Any SMC-EM algorithm therefore proceeds in a similar fashion as an EM algorithm for state-space models, but one must replace the forward, backward, and M steps with their corresponding SMC approximations. Upon convergence, the inferences follows as in Eq. \ref{eq:inf}, but using the particle approximation:
+
+\begin{equation} \label{eq:smc_inf}
+E(H_t) = \sum_i H_t^{(i)} P_{\widehat{\ve{\theta}}}(\ve{H}_t^{(i)} | \ve{O}).
+\end{equation}
+
+\noindent Table \ref{tab:smc_em} provides pseudocode for using a SMC-EM algorithm to perform these inferences.
+
+\begin{table}[h]
+\caption{Pseudocode for SMC-EM}
+\label{tab:smc_em}
+\fbox{\begin{minipage}{1.0\linewidth}
+\begin{enumerate}
+	\item Initialize $\theto$ using some good guess of the initial parameters.
+	\item Call the parameters from the previous EM iteration $\theto$.
+   \begin{itemize}
+   	\item \textbf{Expectation Step:}  The expectation step simplifies to a forward recursion and a backward recursion.
+      \begin{itemize}
+      	\item \textbf{Forward:} Initialize particle, meaning choose a value for each particle at time $t=0$, and assign each a weight of $1/N$.  Then, for $i\in \{1,\ldots,N\}$ and $t=1,\ldots, T$:
+         \begin{enumerate}
+         	\item update particles by sampling from the sampling distribution $\ve{H}_t^{(i)}$ $\sim \q$,
+            \item update weights using Eq. \ref{eq:SIS},
+            \item if necessary, stratified resample and set $w_t^{(i)}=1/N$ for all $i$.
+         \end{enumerate}
+         \item \textbf{Backward:} For $t=T, \ldots, 1$
+         \begin{enumerate}
+            \item Compute the pairwise joint conditional likelihoods using Eq. \ref{eq:part_joint},
+            \item Compute the marginal conditional likelihoods using Eq. \ref{eq:part_marg}.
+         \end{enumerate}
+      \end{itemize}
+      \item \textbf{Maximization Step:}
+      \begin{itemize}
+         \item Find $\theth_{Tr}$, the maximum likelihood estimates of the transition distribution parameters, using Eq. \ref{eq:smcQT}, and let $\theto_{Tr} \rightarrow \theth_{Tr}$ for the next iteration.
+         \item Find $\theth_o$, the maximum likelihood estimates of the observation distribution parameters using Eq. \ref{eq:smcQO}, and let $\theto_o \rightarrow \theth_o$ for the next iteration.
+      \end{itemize}
+   \end{itemize}
+	\item Repeat the EM steps until convergence. Then, perform the desired inferences by plugging the final parameter estimates into equations such as \ref{eq:smc_inf}.
+\end{enumerate}
+\end{minipage}}
+\end{table}
+
+\clearpage \newpage \appendix \numberwithin{equation}{section}
+\section{Expectation Step for State-Space Models} \label{sec:E}
+
+Our goal here is to evaluate the following expectation:
+
+%\begin{subequations}
+\begin{align} \label{app_eq:E_step}
+Q(\ve{\theta},\theto) &=
+\ve{E}_{P_{\theto}(\ve{H}| \ve{O})}\ln
+P_{\ve{\theta}}(\ve{O},\ve{H}) %\\
+= \idotsint \ln P_{\ve{\theta}} (\ve{O},\ve{H}) P_{\theto} (\ve{H} |  \ve{O}) d\ve{H}_0 \cdots d\ve{H}_T
+\end{align}
+%\end{subequations}
+
+\noindent We do so invoking two mathematical tricks.  First, by making use of the conditional independencies inherent in our model, we can write the whole joint probability as a product of conditional probabilities:
+
+%\begin{subequations}
+\begin{align}
+P_{\ve{\theta}} (\ve{O}, \ve{H}) &= P_{\ve{\theta}} (\ve{O} | \ve{H}) P_{\ve{\theta}} (\ve{H})% \\
+= P_{\ve{\theta}}(\ve{H}_0) \prod_{t=1}^T P_{\ve{\theta}} (\ve{H}_t | \ve{H}_{t-1}) \prod_{t=0}^T P_{\ve{\theta}} (\ve{O}_t |  \ve{H}_t),
+\end{align}
+%\end{subequations}
+
+\noindent or equivalently, the log as a set of sums:
+
+\begin{align} \label{app_eq:loG_HMM}
+\ln P_{\ve{\theta}} (\ve{O}, \ve{H})
+ = \ln P_{\ve{\theta}}(\ve{H}_0) + \sum_{t=1}^T \ln P_{\ve{\theta}} (\ve{H}_t | \ve{H}_{t-1}) + \sum_{t=0}^T \ln P_{\ve{\theta}} (\ve{O}_t |  \ve{H}_t).
+\end{align}
+
+\noindent Substituting (\ref{app_eq:loG_HMM}) into (\ref{app_eq:E_step}) yields:
+
+\begin{multline} \label{app_eq:expandHHM}
+Q(\ve{\theta},\theto) =
+\idotsint \Big(\ln P_{\ve{\theta}}(\ve{H}_0) %\\
+ + \sum_{t=1}^T \ln P_{\ve{\theta}} (\ve{H}_t | \ve{H}_{t-1}) %\\
++ \sum_{t=0}^T \ln P_{\ve{\theta}} (\ve{O}_t | \ve{H}_t)\Big) P_{\theto} (\ve{H} | \ve{O}) d\ve{H}_0 \cdots d\ve{H}_T.
+\end{multline}
+
+\noindent Second, we use the rules for maginalizing densitites to simplify
+%\noindent where the second equality follows from the definition of marginal densities.  Applying this idea to the products found in 
+the products in Eq. \ref{app_eq:expandHHM}:
+
+\begin{align}
+\idotsint P_{\theto} (\ve{H} |  \ve{O})
+\times \ln P_{\ve{\theta}}(\ve{H}_0) d\ve{H}_0 \cdots d\ve{H}_T = \int P_{\theto} (\ve{H}_0 | \ve{O}) \times \ln P_{\ve{\theta}}(\ve{H}_0) d\ve{H}_0
+\end{align}
+
+\begin{multline}
+\idotsint \sum_{t=1}^T P_{\theto} (\ve{H} |  \ve{O}) \times \ln P_{\ve{\theta}} (\ve{H}_t | \ve{H}_{t-1}) d\ve{H}_0 \cdots d\ve{H}_T = \\
+\sum_{t=1}^T \iint P_{\theto} (\ve{H}_t,\ve{H}_{t-1} | \ve{O})  \times \ln P_{\ve{\theta}}(\ve{H}_t |  \ve{H}_{t-1}) d\ve{H}_t d\ve{H}_{t-1}
+\end{multline}
+
+\begin{align}
+\idotsint \sum_{t=0}^T P_{\theto} (\ve{H} |  \ve{O}) \times \ln P_{\ve{\theta}} (\ve{O}_t | \ve{H}_t) d\ve{H}_0 d\ve{H}_T = %\\
+\sum_{t=0}^T \int P_{\theto} (\ve{H}_t |  \ve{O}) \times \ln P_{\ve{\theta}} (\ve{O}_t |  \ve{H}_t) d\ve{H}_t,
+\end{align}
+
+\noindent Therefore, Eq. \ref{app_eq:expandHHM} becomes:
+
+\begin{multline}
+Q(\ve{\theta},\theto) = \int P_{\theto} (\ve{H}_0 | \ve{O}) \times \ln P_{\ve{\theta}}(\ve{H}_0)  d\ve{H}_0 + \\
+\sum_{t=1}^T \iint P_{\theto} (\ve{H}_t,\ve{H}_{t-1} | \ve{O})  \times \ln P_{\ve{\theta}} (\ve{H}_t |  \ve{H}_{t-1}) d\ve{H}_t d\ve{H}_{t-1} + \\
+\sum_{t=0}^T \int P_{\theto} (\ve{H}_t |  \ve{O}) \times \ln P_{\ve{\theta}} (\ve{O}_t |  \ve{H}_t) d\ve{H}_t.
+\end{multline}
+
+\section{Forward Recursion Derivation} \label{sec:for}
+
+First, we simplify $P\left(\ve{H}_t | \ve{O}_{0:t}\right)$ by applying Bayes' Rule, followed by the laws governing marginal probabilities, and Bayes' Rule again:
+
+\begin{subequations}
+\begin{align}  \label{app_eq:x|y1}
+P(\ve{H}_t|\ve{O}_{0:t}) &= \frac{P(\ve{H}_t,\ve{O}_{0:t})}{P(\ve{O}_{0:t})} \\
+ &= \frac{1}{P(\ve{O}_{0:t})} \int d\ve{H}_{0:k-1} P(\ve{H}_{0:t}, \ve{O}_{0:t})\\
+ &= \frac{1}{P(\ve{O}_{0:t})} \int d\ve{H}_{0:k-1}  P(\ve{H}_{0:t}, \ve{O}_{0:k-1}) P(\ve{O}_t | \ve{H}_{0:t}, \ve{O}_{0:k-1}).
+\end{align}
+\end{subequations}
+
+\noindent Then, we note that because of the model assumptions, we can simplify $P(\ve{O}_t | \ve{H}_{0:t}, \ve{O}_{0:k-1})$ using the following:
+
+\begin{lemma} \label{lem:1}
+\begin{equation}
+P(\ve{O}_t | \ve{H}_{0:t}, \ve{O}_{0:k-1}) = P(\ve{O}_t | \ve{H}_t)
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+\begin{subequations}
+\begin{align}
+P(\ve{O}_t | \ve{H}_{0:t}, \ve{O}_{0:k-1}) &= \frac{P(\ve{H}_{0:t}, \ve{O}_{0:t})}{P(\ve{H}_{0:t}, \ve{O}_{0:k-1})}\\
+&=\frac{P(\ve{O}_{0:t} | \ve{H}_{0:t}) P(\ve{H}_{0:t})}{\int d\ve{O}_t P(\ve{H}_{0:t}, \ve{O}_{0:k-1}, \ve{O}_t)}\\
+&=\frac{P(\ve{O}_{0:t} | \ve{H}_{0:t}) P(\ve{H}_{0:t})}{\int d\ve{O}_t P(\ve{O}_{0:t} | \ve{H}_{0:t}) P(\ve{H}_{0:t})}\\
+&=\frac{P(\ve{H}_{0:t}) \prod_{s=1}^{t} P(\ve{O}_s | \ve{H}_s)}{P(\ve{H}_{0:t}) \int d\ve{O}_t \prod_{s=1}^t  P(\ve{O}_s | \ve{H}_s)}\\
+&=\frac{P(\ve{H}_{0:t}) \prod_{s=1}^t P(\ve{O}_s | \ve{H}_s)}{P(\ve{H}_{0:t}) \prod_{s=1}^{t-1} P(\ve{O}_s | \ve{H}_s)}\\
+&=P(\ve{O}_t|\ve{H}_t)
+\end{align}
+\end{subequations}
+\end{proof}
+
+\noindent Therefore,
+
+\begin{subequations}
+\begin{align}
+ P(\ve{H}_t | \ve{O}_{0:t}) &= \frac{1}{P(\ve{O}_{0:t})} \int d\ve{H}_{0:k-1}  P(\ve{H}_{0:t}, \ve{O}_{0:k-1}) P(\ve{O}_t | \ve{H}_t)\\
+ &= \frac{1}{P(\ve{O}_{0:t})} P(\ve{O}_t | \ve{H}_t) \int d\ve{H}_{0:k-1}  P(\ve{H}_{0:t}, \ve{O}_{0:k-1}) \\
+ &= \frac{1}{P(\ve{O}_{0:t})} P(\ve{O}_t|\ve{H}_t) P(\ve{H}_t, \ve{O}_{0:k-1}) \\
+ &= \frac{1}{P(\ve{O}_{0:t})}  P(\ve{O}_t|\ve{H}_t) P(\ve{H}_t | \ve{O}_{0:k-1}) P(\ve{O}_{0:k-1})\\ \label{app_eq:kal1}
+ &= \frac{1}{P(\ve{O}_t | \ve{O}_{0:k-1})} P(\ve{O}_t|\ve{H}_t) P(\ve{H}_t | \ve{O}_{0:k-1}), 
+\end{align}
+\end{subequations}
+
+\noindent where all the equalities follow from Bayes's rule or the definition of conditional and marginal densities.  We now need to simplify the so-called ``one-step predictor'', $P(\ve{H}_t | \ve{O}_{0:k-1})$, termed so because it predicts the likelihood of the hidden state at time step $t$ given observations up to, but not including, time step $t$:
+
+\begin{subequations}
+\begin{align} \label{app_eq:x|y2}
+P(\ve{H}_t|\ve{O}_{0:k-1}) &= \int d\ve{H}_{0:k-1} P(\ve{H}_{0:t} | \ve{O}_{0:k-1})\\
+ &=\int d\ve{H}_{0:k-1} P(\ve{H}_t | \ve{H}_{0:k-1}, \ve{O}_{0:k-1}) P(\ve{H}_{0:k-1}|\ve{O}_{0:k-1})\\
+ &=\int d\ve{H}_{t-1} P(\ve{H}_t|\ve{H}_{t-1}) P(\ve{H}_{t-1} | \ve{O}_{0:k-1}),
+\end{align}
+\end{subequations}
+
+\noindent where the first two equalities follow from basic probability theory and the third equality follows from the following:
+
+\begin{lemma} \label{lem:2}
+\begin{equation}
+P(\ve{H}_t | \ve{H}_{0:k-1}, \ve{O}_{0:k-1}) = P(\ve{H}_t | \ve{H}_{t-1}).
+\end{equation}
+\end{lemma}
+
+\noindent which follows from a similar proof as Lemma \label{lem:2}.  This result together with Eq. \ref{app_eq:kal1}, provides the following recursive relationship, often referred to as the Chapman-Kolmogorov equations:
+
+\begin{align} \label{app_eq:chap_tol}
+P(\ve{H}_t|\ve{O}_{0:t}) &= \frac{1}{P(\ve{O}_t | \ve{O}_{0:k-1})} P(\ve{O}_t|\ve{H}_t) P(\ve{H}_t|\ve{O}_{0:k-1}) \\
+P(\ve{H}_t|\ve{O}_{0:k-1}) &= \int d\ve{H}_{t-1} P(\ve{H}_t|\ve{H}_{t-1}) P(\ve{H}_{t-1} | \ve{O}_{0:k-1}).
+\end{align}
+
+\noindent Note that for the rest of this text, we let $P(\ve{O}_t | \ve{O}_{0:k-1})$ act as a normalizing constant as it is not a function of $\ve{H}_t$, and therefore, denote it by $Z$.
+
+\section{Backward Recursion Derivation} \label{sec:bact}
+
+To estimate the joint posterior hidden probabilities, we apply Bayes' rule several times to simplify:
+
+
+\begin{subequations}
+\begin{align}
+P(\ve{H}_t, \ve{H}_{t+1} | \ve{O}) &= P(\ve{H}_{t+1} | \ve{O}) P(\ve{H}_t | \ve{H}_{t+1}, \ve{O}) \\
+&=P(\ve{H}_{t+1} | \ve{O}) P(\ve{H}_t | \ve{H}_{t+1}, \ve{O}_{0:t}) \\
+&=P(\ve{H}_{t+1} | \ve{O}) \frac{P(\ve{H}_t, \ve{H}_{t+1}, \ve{O}_{0:t})}{P(\ve{H}_{t+1}, \ve{O}_{0:t})} \label{eq:subber}
+\end{align}
+\end{subequations}
+
+\noindent We can then simplify the numerator by applying Bayes rule and our model assumptions a couple times:
+
+\begin{subequations}
+\begin{align}
+P(\ve{H}_t, \ve{H}_{t+1}, \ve{O}_{0:t}) &= P(\ve{H}_t, \ve{H}_{t+1} | \ve{O}_{0:t}) P(\ve{O}_{0:t}) \\
+&=P(\ve{H}_{t+1} | \ve{H}_t) P(\ve{H}_t | \ve{O}_{0:t}) P(\ve{O}_{0:t}) \\
+&=P(\ve{H}_{t+1} | \ve{H}_t) P(\ve{H}_t, \ve{O}_{0:t}) \label{eq:numer}
+\end{align}
+\end{subequations}
+
+\noindent Substituting the result from Eq. \label{eq:numer} into Eq. \label{eq:subber}, yields:
+
+\begin{subequations}
+\begin{align}
+P(\ve{H}_t, \ve{H}_{t+1} | \ve{O}) &= P(\ve{H}_{t+1} | \ve{O}) \frac{ P(\ve{H}_{t+1} | \ve{H}_t) P(\ve{H}_t, \ve{O}_{0:t})}{P(\ve{H}_{t+1} , \ve{O}_{0:t})} \\
+ P(\ve{H}_t, \ve{H}_{t+1} | \ve{O}) &= P(\ve{H}_{t+1} | \ve{O}) \frac{ P(\ve{H}_{t+1} | \ve{H}_t) P(\ve{H}_t, \ve{O}_{0:t})}{\int P(\ve{H}_{t+1} | \ve{H}_t) P(\ve{H}_t | \ve{O}_{0:t}) d\ve{H}_t} 
+\end{align}
+\end{subequations}
+
+%\begin{subequations}
+%\begin{align}
+%P(\ve{H}_t, \ve{H}_{t+1} | \ve{O}) &= \frac{P(\ve{H}_t, \ve{H}_{t+1}, \ve{O})}{P(\ve{O})}  \\
+%&= \frac{P(\ve{H}_t | \ve{H}_{t+1}, \ve{O})
+%P(\ve{H}_{t+1}, \ve{O})}{P(\ve{O})} \\
+%&= \frac{P(\ve{H}_t | \ve{H}_{t+1}, \ve{O})
+%P(\ve{H}_{t+1} |  \ve{O}) P(\ve{O})}
+%{P(\ve{O})} \\ \label{app_eq:joint_post}
+%&= P(\ve{H}_t | \ve{H}_{t+1}, \ve{O}) P(\ve{H}_{t+1} |  \ve{O}).
+%\end{align}
+%\end{subequations}
+%
+%\noindent We want to simplify $P(\ve{H}_t |  \ve{H}_{t+1}, \ve{O})$ to terms that we can either estimate of compute exactly.  We proceed again by applying Bayes' Rule several times:
+%
+%\begin{subequations}
+%\begin{align}
+%P(\ve{H}_t| \ve{H}_{t+1}, \ve{O}) &=
+%\frac{P(\ve{O},\ve{H}_t,\ve{H}_{t+1})}{P(\ve{H}_{t+1}, \ve{O})}
+%\\ &= \frac{P(\ve{O}| \ve{H}_t,\ve{H}_{t+1}) P(\ve{H}_t ,\ve{H}_{t+1})} {P(\ve{H}_{t+1}, \ve{O})} \\ &= \frac{P(\ve{O}|
+%\ve{H}_t,\ve{H}_{t+1}) P(\ve{H}_t| \ve{H}_{t+1})P(\ve{H}_{t+1})}{P(
+%\ve{O}| \ve{H}_{t+1})P(\ve{H}_{t+1})}.
+%\end{align}
+%\end{subequations}
+%
+%\noindent Clearly, $P(\ve{H}_{t+1})$ in the numerator and denominator cancel one another. Further, because $P(\ve{O}_{0:t}) $ is independent of $P(\ve{O}_{t+1:T})$ when conditioned on $\ve{H}_t$ and $\ve{H}_{t+1}$, we can separate $P(\ve{O}| \ve{H}_t,\ve{H}_{t+1})$ into
+%$P(\ve{O}_{0:t}| \ve{H}_t)$ and $P(\ve{O}_{t+1:T}| \ve{H}_{t+1})$, and
+%$P(\ve{O}| \ve{H}_{t+1})$ into $P(\ve{O}_{0:t}| \ve{H}_{t+1})$ and
+%$P(\ve{O}_{t+1:T}| \ve{H}_{t+1})$.  Therefore, we have:
+%
+%\begin{subequations}
+%\begin{align}
+%P(\ve{H}_t| \ve{H}_{t+1}, \ve{O})
+%&=\frac{P(\ve{O}_{0:t}| \ve{H}_t) P(\ve{O}_{t+1:T}| \ve{H}_{t+1})
+%P(\ve{H}_t| \ve{H}_{t+1})}{P(\ve{O}_{0:t}| \ve{H}_{t+1}) P(\ve{O}_{t+1:T}| \ve{H}_{t+1})}.
+%\end{align}
+%\end{subequations}
+%
+%\noindent Canceling $P(\ve{O}_{t+1:T}| \ve{H}_{t+1})$ from the numerator and denominator, and then applying Bayes' Rule many more times, and canceling terms when appropriate, we can show:
+%
+%\begin{subequations}
+%\begin{align}
+%P(\ve{H}_t| \ve{H}_{t+1}, \ve{O}) &= \frac{P(\ve{O}_{0:t}| \ve{H}_t) P(\ve{H}_t| \ve{H}_{t+1})}{P(\ve{O}_{0:t}| \ve{H}_{t+1})} \\
+%&= \frac{P(\ve{O}_{0:t},\ve{H}_t) P(\ve{H}_{t+1}) P(\ve{H}_t| \ve{H}_{t+1})}{P(\ve{O}_{0:t},\ve{H}_{t+1}) P(\ve{H}_t)} \\
+%&= \frac{P(\ve{H}_t| \ve{O}_{0:t})P(\ve{O}_{0:t}) P(\ve{H}_{t+1}, \ve{H}_t)}{P(\ve{H}_{t+1}| \ve{O}_{0:t}) P(\ve{O}_{0:t})P(\ve{H}_{t})} \\ 
+%&= \frac{P(\ve{H}_t| \ve{O}_{0:t}) P(\ve{H}_{t+1}, \ve{H}_t)}{P(\ve{H}_{t+1}| \ve{O}_{0:t}) P(\ve{H}_{t})} \\ \label{app_eq:trans_post}
+%&= \frac{P(\ve{H}_t| \ve{O}_{0:t}) P(\ve{H}_{t+1}| \ve{H}_t)}{P(\ve{H}_{t+1}| \ve{O}_{0:t})}.
+%\end{align}
+%\end{subequations}
+%
+%\noindent Plugging in (\ref{app_eq:trans_post}) into (\ref{app_eq:joint_post}), yielding:
+%
+%\begin{align} \nonumber
+%P\left(\ve{H}_t, \ve{H}_{t+1} |  \ve{O}\right) &=
+%P\left(\ve{H}_t | \ve{O}_{0:t}\right) \frac{P\left(\ve{H}_{t+1}| \ve{H}_t\right)
+%P\left(\ve{H}_{t+1} | \ve{O}\right)}{P(\ve{H}_{t+1}| \ve{O}_{0:t})} \qed
+%\end{align}
+
+\section{Importance Sampling} \label{sec:IS}
+
+The idea for importance sampling comes from the following intuition.  We can define the expected value of some discrete-valued function, $\phi(x)$, with respect to the distribution $p(x)$, as:
+
+\begin{equation}
+E_p(\phi(x)) = \sum_x \phi(x) p(x).
+\end{equation}
+
+\noindent Therefore, if we sample uniformly from $p(x)$ to generate particles, $x^{(i)}$, we can approximate this expected value as:
+
+\begin{equation}
+E_p(\phi(x)) \approx \sum_i \phi(x^{(i)}) p(x^{(i)}) = \frac{1}{N} \sum_i \phi(x^{(i)}),
+\end{equation}
+
+\noindent where $p(x^{(i)}) = 1/N$ for all $i$ by definition, as we have sampled from it.  This ``uniform sampling'' strategy can be very inefficient for certain kinds of distributions. Instead of uniformly sampling from $p(x)$, we could sample from some other distribution, $q(x)$.  Note that the expectation can be redefined accordingly by multipling and dividing by $q(x)$:
+
+\begin{align}
+E_p(\phi(x)) &= \sum_x \phi(x) \frac{p(x)}{q(x)} q(x) = E_q \left(\phi(x) \frac{p(x)}{q(x)}\right).
+\end{align}
+
+\noindent Therefore, sampling from $q(x)$ enables a different approximation of the expectation:
+
+\begin{subequations}
+\begin{align}
+E_p(\phi(x))  &\approx \frac{1}{Z} \sum_i \phi(x^{(i)}) \frac{p(x^{(i)})}{q(x^{(i)})} q(x^{(i)})
+\\ &= \frac{1}{Z} \sum_i \phi(x^{(i)}) \frac{p(x^{(i)})}{q(x^{(i)})}
+\\ &= \sum_i \phi(x^{(i)}) w^{(i)}.
+%\\&= E_q \left(\phi(x) \frac{p(x)}{q(x)}\right)
+\end{align}
+\end{subequations}
+
+\noindent Therefore, one can approximate an expectation of $\phi(x)$ by sampling from some distribution, $q(x)$, and using it to compute the weights, $w^{(i)}$.  While, this might seem like a trick only useful for approximating expectations, by employing a trick that enables any likelihood to be written as an expectation, one can use this strategy to sample from any distribution.  In particular, one can write
+
+\begin{align}
+P(X=x) = E_P ( \delta(X,x)) = \int_{y \in \mathcal{Y}} P(X=x) \delta(x,y) dy = \sum_{y \in \mathcal{Y}} P(X=x) \delta(x,y),
+\end{align}
+
+\noindent where $y$ is a dummy variable that can take any value in $\mathcal{Y}$.  Note that if the space of $y$ does not include some possible values in the space of $x$, i.e., $\exists$ $x$ such that $x \notin \mathcal{Y}$, then the above equalities are actually approximations, and a normalization constant must be introduced to account for this:
+
+\begin{align}
+P(X=x) \approx \frac{1}{Z} \sum_{y \in \mathcal{Y}} P(X=x) \delta(x,y),
+\end{align}
+
+ \noindent where $Z=\sum_y P(X=y)$ ensures that the distribution $P(X)$ integrates to unity.  This is precisely the same trick that enables justification of any sampling procedure.  In other words, we could write:
+
+\begin{align}
+P(X=x) \approx \frac{1}{Z} \sum_i P(X=x) \delta(x,x^{(i)}).
+\end{align}
+
+\section{Stratified Resampling} \label{sec:strat}
+
+Stratified resampling is based on based on ideas used in survey sampling\cite{DoucMoulines05}.  One first prepartions the unit interval, into $N$ disjoint sets, $(0,1)=(0,1/N) \cup \cdots ((N-1)/N,1)$.  Then, each $U^{(i)}$ is drawn independently from its associated sub-interval, $U^{(i)} \sim \mathcal{U}\{((i-1)/N,i/N)\}$, where $\mathcal{U}\{a,b\}$ denotes the uniform distribution on the interval $(a,b)$.  Next, one generates a cumulative sum of weights, comprising a set now on the same interval.  Each sample then corresponds to a particle, the one that sets the lower bound within the interval defined by that particle and the next one. Table \ref{tab:SR} provides a detailed algorithm. This approach is more efficient than multinomial resampling in that the conditional variance of stratified resampling is always smaller than that of multinomial resampling.
+
+\begin{table}[h]
+\caption{Pseudocode for Stratified Resampling}
+\label{tab:SR}
+\begin{itemize}
+\item Having particle values, $\breve{\ve{H}}_t^{(i)}$ and associated weights, $\breve{w}_t^{(i)}$,
+pre-partion the interval $(0,1)$ into $N$ disjoint sets, i.e.,
+%    \begin{equation}
+   $ (0,1) = (0,1/N) \cup \cdots \cup (\{N-1\}/N,1)$
+%    \end{equation}
+\item Draw $N$ samples, one from each subinterval, i.e.
+%    \begin{equation}
+$    \mathcal{U}^{(i)} \sim \mathcal{U}\left((\{i-1\}/N, i/N) \right)$
+%    \end{equation}
+    \noindent where $\mathcal{U}\left((a,b) \right)$ indicates the uniform distribution on the interval $(a,b)$
+\item Compute the cumulative sum of weights, i.e.,
+%    \begin{equation}
+$    c^{(i)} = \sum_{t=1}^i \breve{w}_t^{(k)}$
+%    \end{equation}
+\item For each sample $i$, find the interval labeled by $j$ that $\mathcal{U}^{(i)}$ is between, i.e.,
+%    \begin{equation}
+$    \find_j  c^{(j)} < \mathcal{U}^{(i)} < c^{(j+1)}$
+%    \end{equation}
+\item For each sample $i$, let the particle values have indexes as chosen by the above, i.e.,
+%    \begin{equation}
+$    \ve{H}_t^{(i)}  = \breve{\ve{H}}_t^{(j)}$
+%    \end{equation}
+\item Reset all the weights, i.e., $w_t^{(i)}=1/N$
+\end{itemize}
+\end{table}
+
+
+\clearpage \newpage
+\bibliography{jv-paper}
+\addcontentsline{toc}{section}{References}
+%\bibliographystyle{apalike}
+\bibliographystyle{biophysj}
+\end{document}
+

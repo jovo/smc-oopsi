@@ -1,0 +1,115 @@
+in Eqs. \ref{eq:mean_obs} and \ref{eq:var_obs} (assuming the nonlinear observations and signal dependent noise model): 
+
+%One can compute the above integral using the rules of integrals of products of Gaussians (see Eq. \ref{ eq:gauss_rule}), to generate a new Gaussian:  either Eq. \ref{eq:F_t} (if we assume a linear observation model) or 
+
+\begin{multline} \label{eq:q_nn}
+\mathcal{N}\big(n_t^{(i)} | F_t\big) = \frac{1}{\sqrt{2 \pi} \big(\big(S(
+C_t^{(i)}) + \sigma_F\big)^2 + \sigma_c^2 \Delta\big)}  \exp \left\{-\frac{1}{2}\frac{\big(F_t - \alpha S\big(C_t^{(i)}\big) - \beta \big)^2}{\big(S(C_t^{(i)}) + \sigma_F)\big)^2 + \sigma_c^2 \Delta}\right\},
+\end{multline}
+
+\noindent where we let $C_t^{(i)}=(1-\frac{\Delta}{\tau}) \Ca_{t-1}^{(i)} + A n_t^{(i)} + \frac{\Delta}{\tau} \Ca_b$, which is implictly a function of $n_t^{(i)}$.  We compute the above distribution for the two cases, $n_t^{(i)}=0$ and $n_t^{(i)}=1$.  Thus, for each particle, one samples from:
+
+\begin{subequations} \label{aeq:qn2}
+\begin{align}
+\widetilde{q}\big(n_t^{(i)}\big)&=p \Delta \mathcal{N}(n_t^{(i)} | F_t)\\
+q\big(n_t^{(i)}\big)&=\frac{\widetilde{q}\big(n_t^{(i)}\big)}{\sum_{n_t^{(i)}=\{0,1\}} \widetilde{q}\big(n_t^{(i)}\big)}.
+\end{align}
+\end{subequations}
+
+%\begin{subequations} \label{aeq:qn1}
+%\begin{align}
+%\widetilde{q}(n_t)&=\mathcal{B}(n_t; 1-e^{-f\big(y_t^{(i)}\big) \Delta}) \mathcal{N}(n_t^{(i)} | F_t)\\
+%q(n_t)&=\frac{\widetilde{q}(n_t)}{\sum_{n_t=\{0,1\}} \widetilde{q}(n_t)}.
+%\end{align}
+%\end{subequations}
+%
+%\noindent where $\mathcal{B}(n_t; x)$ indicates sampling from a Bernoulli random variable with probability $x$ that $n_t=1$ and probability $1-x$ that $n_t=0$.
+%
+%\begin{align} \label{eq:q_n}
+%\nonumber q(n_t) &\sim \frac{1}{Z} \int \p \big( n_t | \ve{h}_t \big) \p \big( \ve{h}_t | \ve{h}^{(i)}_{t-1}, n_{t-1}^{(i)} \big) d\ve{h}_t^{(i)}  \int  \p \big( \Ca_t | \Ca^{(i)}_{t-1}, n_t \big) \p(F_v|\Ca_t) d\Ca_t
+%\\&=\frac{1}{Z} \p \big( n_t | \ve{h}^{(i)}_t \big) \int \p \big( \Ca_t | \Ca^{(i)}_{t-1}, n_t \big) \p(F_v | \Ca_t) d\Ca_t,
+%\end{align}
+%
+%\noindent where the equality follows from the fact that $\ve{h}_t$ was already sampled. One can compute the above integral using Eq. \ref{eq:gauss_rule}, to generate a Gaussian for each component in the mixture:
+%
+%\begin{align} \label{aeq:Z_t}
+%\mathcal{N}_{\m}^{(i)}(n_t, F_v) =
+%\frac{1}{\sqrt{2 \pi \big(\sigma_{F\m t}^2 + \sigma^2 \Delta\big)}} \exp \left\{-\frac{1}{2}\left(\frac{\mu_{F\m t}- (1- \frac{\Delta}{\tau}) \Ca_{t-1}^{(i)} + A n_t + \frac{\Delta}{\tau} \Ca_b}{ \sigma_{F\m t}^2 + \sigma^2 \Delta}\right)^2\right\},
+%\end{align}
+%
+%\noindent which we compute for $n_t=0$ and $n_t=1$.  Thus, for each particle, one samples from
+%
+%\begin{subequations} \label{aeq:qn}
+%\begin{align}
+%\widetilde{q}(n_t)&=\mathcal{B}(n_t; 1-e^{-f(y_t^{(i)}) \Delta}) \sum_{\m=0}^{v-t} \mathcal{N}_{\m}^{(i)}(n_t, F_v)\\
+%q(n_t)&=\frac{\widetilde{q}(n_t)}{\sum_{n_t=\{0,1\}} \widetilde{q}(n_t)}.
+%\end{align}
+%\end{subequations}
+
+\paragraph{One-observation-ahead sampling of calcium}
+
+Having sampled spikes, we can plug them back into Eq. \ref{eq:q1}, to obtain the distribution from which we sample $\Ca_t$:
+
+\begin{align} \label{eq:q_C}
+q\big(\Ca_t^{(i)}\big) \sim \p\big(F_t \mid \Ca_t^{(i)}\big) \p\big(\Ca_t^{(i)} \mid \Ca_{t-1}^{(i)}, n_t^{(i)}\big),
+\end{align} 
+
+\noindent which follows from having already sampled $n_t^{(i)}$. 
+
+Although $\p(F_t \mid \Ca_t)$ is a Gaussian function of $S(\Ca_t)$, it is not a Gaussian function of $\Ca_t$.  We can approximate $\p(F_t \mid \Ca_t)$ as a Gaussian function of $\Ca_t$ however, using the standard Laplacian approximation.   First, compute a first-order Taylor series approximation of $g(x)=\alpha S(\Ca_t)+\beta$, expanded around $x$:
+
+\begin{align}
+g(x) \approx g(x) + (\Ca_t - x) g'(x) = F_t + (\Ca_t - x) g'(x),
+\end{align}
+
+\noindent where $x = g^{-1}(F_t)$ and $g'(x)=dg(x)/\Delta$. Plugging this approximation into the Gaussian, we have
+
+\begin{align} \label{eq:t_dist}
+\p(F_t \mid \Ca_t) \approx \mathcal{N}\left(\Ca_t^{(i)}; g^{-1}(F_t), \frac{\eta_t^{(i)}}{g'(x)^2}\right).
+\end{align}
+
+\noindent Plugging in the Hill function for $S(\cdot)$, and solving for $x$ and $g'(x)$ yields:
+
+\begin{align} \label{eq:finv}
+x &= g^{-1}(F_t) =  \left(\frac{k_d (\beta - F_t)}{F_t - \beta - \alpha}\right)^{1/n}\\ \label{eq:f'}
+g'(x) &= \left(\frac{k_d (\beta -F_t)}{F_t - \beta - \alpha}\right)^{1/n} \left(-\frac{k_d}{F-\beta-\alpha}-\frac{k_d(\beta-F_t)}{(F_t-\beta-\alpha)^2}\right) \frac{n k_d (\beta - F_t)}{F-\beta-\alpha}.
+\end{align}
+
+\noindent So, plugging Eqs. \ref{eq:finv} and \ref{eq:f'} into \ref{eq:t_dist}, we can obtain a Gaussian function of $\Ca_t$, by using the fact that $\mathcal{N}(x;\mu,\sigma^2)=\mathcal{N}(\mu;x,\sigma^2)$. Note that this approximation holds whenever $\Ca_t$ is in some range, $lb<\Ca_t<ub$, where the lower and upper bounds ($lb$ and $ub$, respectively) are functions of all the parameters: $\alpha$, $\beta$, $\sigma_F$, $n$, and $k_d$. Given those parameters, we subjectively determine these limits.
+
+
+When spike history terms are \emph{not} present, this expectation may be computed exactly.  For instance, the expected probability of spiking at time $v-1$ is
+
+\begin{align} \label{aeq:E(a_1)}
+a_{1,v-1} = 1-e^{f(b+\ve{k}'\ve{x}_{v-1})\Delta},
+\end{align}
+
+\noindent and the expected probability of not spiking is simply $a_{0,v-1}=1-a_{1,v-1}$.  When spike history terms \emph{are} present, $f(\cdot)$ would also be a function of $\ve{h}_{v-1}$, which has not yet been sampled.  We therefore must recursively approximate the expected value for each spike history term using
+
+\begin{align} \label{aeq:E(h)}
+%\begin{split}
+E[h_{lt}] &= E\left[(1-\Delta/\tau_{hl}) h_{l,t-1} + n_{t-1} + \varepsilon_{ht}\right]  = (1-\Delta/\tau_{hl}) E[h_{l,t-1}] + E[n_{t-1}],
+%\end{split}
+\end{align}
+
+\noindent for all $t\in(u,v)$, where $u$ is the time of the previous observation. Then, we let
+
+\begin{align} \label{aeq:E(a_1h)}
+a_{1,t} = E[n_{t}=1] \approx 1-e^{f(b+\ve{k}'\ve{x}_t + \ve{\omega}'E[\ve{h}_t)]\Delta},
+\end{align}
+
+\noindent and $a_{0,t}=1-a_{1,t}$. By iterating between Eqs.\ref{aeq:E(h)} and \ref{aeq:E(a_1h)} for $t=u,\ldots,v$, we get the expected probability of the neuron spiking at any time.
+
+
+
+
+
+\noindent which we compute for $n_t=0$ and $n_t=1$.  Thus, for each particle, one samples from
+
+\begin{subequations} \label{aeq:qn}
+\begin{align}
+\widetilde{q}(n_t^{(i)})&=\mathcal{B}(n_t^{(i)}; 1-e^{-f(y_t^{(i)}) \Delta}) \sum_{\m=0}^{v-t} a_{\m t} \mathcal{N}_{\m}^{(i)}(n_t, F_v)\\
+q\big(n_t^{(i)}\big)&=\frac{\widetilde{q}\big(n_t^{(i)}\big)}{\sum_{n_t^{(i)}=\{0,1\}} \widetilde{q}\big(n_t^{(i)}\big)}.
+\end{align}
+\end{subequations}
+

@@ -1,0 +1,75 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+%\usepackage{cite}
+\usepackage{times}
+\usepackage{geometry}
+\usepackage[round,numbers,sort&compress]{natbib}
+\oddsidemargin=0.0in %%this makes the odd side margin go to the default of 1inch
+\evensidemargin=0.0in
+\textwidth=6.5in
+\textheight=9in %%sets the textwidth to 6.5, which leaves 1 for the remaining right margin with 8 1/2X11inch paper
+
+\providecommand{\ve}[1]{\boldsymbol{#1}}
+\providecommand{\norm}[1]{\left \lVert#1 \right  \rVert}
+\providecommand{\deter}[1]{\lvert #1 \rvert}
+\providecommand{\abs}[1]{\lvert #1 \rvert}
+\providecommand{\tran}{\mbox{${}^{\text{T}}$}}
+\providecommand{\transpose}{\mbox{${}^{\text{T}}$}}
+\providecommand{\ve}[1]{\boldsymbol{#1}}
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\find}{find}
+
+\newcommand{\thetn}{\ve{\theta}}
+\newcommand{\theth}{\widehat{\ve{\theta}}}
+\newcommand{\theto}{\ve{\theta}'}
+\newcommand{\p}{P_{\thetn}}
+\newcommand{\phat}{\widehat{P}_{\thetn}(F_v | \Ca_t)}
+\newcommand{\pT}{P_{\thetn_{Tr}}} %\thetn_T
+\newcommand{\pO}{P_{\thetn_o}} %\thetn_o
+\newcommand{\Q}{Q(\thetn,\theto)}
+\newcommand{\m}{m^{\ast}}
+\newcommand{\q}{q\big(\ve{H}_t^{(i)}\big)}
+\newcommand{\Ca}{[\text{Ca}^{2+}]}
+
+%\usepackage[hypertex]{hyperref}    %for LaTeX
+\usepackage{hyperref}               %for pdfLaTeX
+
+
+\title{some weirdness}
+\author{joshua vogelstein}
+
+\begin{document}
+
+\begin{enumerate}
+\item 
+\begin{align}
+\p(H_t | H_{t-1}, O_t) \propto \p(H_t | H_{t-1}) \p(O_t | H_t)
+\end{align}
+
+with proportionality constant, $\p(O_t | H_{t-1})$.  Throughout the text, we write $=$ instead of $\propto$ in the above equation. i changed it where appropriate.
+
+\item upon computing the weights, we have
+
+\begin{align}\label{eq:1}
+w_t^{(i)} &\propto \frac{\p(F_t | \Ca_t) \p(\Ca_t | \Ca_{t-1}, n_t) \p(n_t) w_{t-1}^{(i)}}{q(n_t) q(\Ca_t)}
+\end{align}
+
+considering, A$.11$ in our text,  and plugging in A.7 and A.8, we can simplify the above to:
+
+\begin{align}
+w_t^{(i)} &\propto \frac{w_{t-1}^{(i)}}{\mathcal{G}_L(n_t^{(i)} | F_t)}
+\end{align}
+
+this simplification doesn't follow exactly when we assume a nonlinear observation model, because we then approximate $\p(F_t | \Ca_t)$ for sampling (in the denominator), but compute it exactly for the numerator in \eqref{eq:1} . nonetheless, when the approximation is good, then the above simplification is also approximately correct.  this, obviously, is not a big deal, but also not something i noticed until just recently (actually, quentin pointed that out to me a while back, but i didn't pay any attention to it at the time).  the interesting thing, for me though, is that the weights are then independent of the sampled $\Ca_t$.  i can't tell if that means anything important, but i thought it was worth noting.
+
+\item when having intermittent observations, we only check for weight degeneracy at observation times. i think  this is actually a relic from when we thought that sampling from $\p(H_t | H_{t-1}, O_t)$ meant that the weights were all equal.  in any case, we could compute $N_{eff}$ at every time step, even when observations are intermittent.  when severely subsampling, this might be desirable.
+
+\end{enumerate}
+
+
+\end{document}

@@ -1,0 +1,16 @@
+\BOOKMARK [1][-]{section*.1}{Introduction}{}
+\BOOKMARK [1][-]{section*.2}{Model}{}
+\BOOKMARK [1][-]{section*.3}{Mathematical Methods}{}
+\BOOKMARK [1][-]{section*.4}{Experimental Methods}{}
+\BOOKMARK [1][-]{section*.7}{Results}{}
+\BOOKMARK [1][-]{section*.13}{Discussion}{}
+\BOOKMARK [1][-]{appendix.A}{Details for constructing the particle filters}{}
+\BOOKMARK [2][-]{subsection.A.1}{Linear observation particle filter}{appendix.A}
+\BOOKMARK [2][-]{subsection.A.2}{Nonlinear observation particle filter}{appendix.A}
+\BOOKMARK [2][-]{subsection.A.3}{Superresolution particle filter}{appendix.A}
+\BOOKMARK [2][-]{subsection.A.4}{GLM particle filter}{appendix.A}
+\BOOKMARK [1][-]{appendix.B}{Learning the parameters}{}
+\BOOKMARK [1][-]{section*.33}{References}{}
+\BOOKMARK [1][-]{section*.34}{Tables}{}
+\BOOKMARK [1][-]{section*.35}{Figure Legends}{}
+\BOOKMARK [1][-]{section*.36}{Figures}{}

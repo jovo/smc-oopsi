@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99c (Web2C 7.5.6)
+The top-level auxiliary file: BJ08.aux
+The style file: biophysj.bst
+Database file #1: /Users/joshyv/Research/misc/biblist.bib
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Warning--empty booktitle in VogelsteinPaninski09
+You've used 79 entries,
+            3176 wiz_defined-function locations,
+            1226 strings with 22546 characters,
+and the built_in function-call counts, 39819 in all, are:
+= -- 2999
+> -- 2043
+< -- 27
++ -- 698
+- -- 540
+* -- 2884
+:= -- 5609
+add.period$ -- 271
+call.type$ -- 79
+change.case$ -- 82
+chr.to.int$ -- 79
+cite$ -- 80
+duplicate$ -- 3326
+empty$ -- 3238
+format.name$ -- 737
+if$ -- 8229
+int.to.chr$ -- 1
+int.to.str$ -- 80
+missing$ -- 728
+newline$ -- 434
+num.names$ -- 237
+pop$ -- 1087
+preamble$ -- 1
+purify$ -- 79
+quote$ -- 0
+skip$ -- 729
+stack$ -- 0
+substring$ -- 1861
+swap$ -- 1737
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 544
+warning$ -- 1
+while$ -- 287
+width$ -- 0
+write$ -- 1092
+(There was 1 warning)

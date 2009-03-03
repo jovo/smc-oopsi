@@ -1,6 +1,7 @@
 /old/*
 /data/*
-/docs/*
+%/docs/*
+/docs/journal_paper/old/*
 /code/glm-neal/*
 /CodeToSend/*
 *.swp

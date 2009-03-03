@@ -1,0 +1,169 @@
+% Template for BJ paper in LaTeX (Jan Hrabe, NKI, 05/16/2005)
+%
+% To compile into a document, run
+% latex bj_latex_template
+% bibtex bj_latex_template
+% latex bj_latex_template (run 2-3 times repeatedly)
+% dvips bj_latex_template.dvi
+%
+% or replace the latex command by the pdflatex command in the lines above to
+% generate a PDF file and use acroread or xpdf for viewing and
+% printing instead of the postscript generating program dvips
+
+% Use standard article document class with slightly bigger font and 
+% a separate title page
+\documentclass[11pt,titlepage]{article}
+
+% Packages to load (all standard on a modern LaTeX system on Linux)
+
+% Make doublespaced ugly typography required for mysterious 
+% reasons by most journals - comment out for normal output
+\usepackage{setspace} 
+\doublespacing
+
+% AMS-Math package to have nice multi-line equations and other goodies
+\usepackage{amsmath}
+
+% Show labels for easy orientation, comment out for final version
+% \usepackage{showlabels}
+
+% EPS/PDF graphics
+% Place figures in the document directory in both the EPS and PDF
+% formats, e.g., fig_1.eps and fig_1.pdf. Use the includegraphics
+% command without file extension, e.g. \includegraphics*[width=3.25in]{fig_1}
+% The pdflatex or latex programs then work automagically with the 
+% appropriate formats.  EPS figures can be converted to PDF using
+% the epstopdf program present on most Linux disributions
+\usepackage{graphicx}
+
+% Citation style in the text: numbers in parenthesis, sorted by their
+% order in the list of references.
+% Uses a range if possible: (1-3), not (1,2,3)
+\usepackage[round,numbers,sort&compress]{natbib} 
+% Bibliography style (requires the style file biophysj.bst in the 
+% document directory)
+\bibliographystyle{biophysj}
+% Numbering style in the list of references: a number followed by a period
+\renewcommand{\bibnumfmt}[1]{#1.}
+
+% Examples of special definitions (amsmath package required)
+\newcommand{\erf}{\operatorname{erf}}        % error function
+\newcommand{\erfc}{\operatorname{erfc}}      % complementary error function
+\newcommand{\BibTeX}{\textsc{Bib}\TeX}       % corect BibTeX appearance
+
+\title{Paper title in full}
+
+\author{John~Doe\thanks{
+           Corresponding author.  Address: 
+           Department name,
+	   Institute name,
+	   First address line,
+	   City, State~00000, U.S.A.,
+	   Tel.:~(000)000-0000, Fax:~(000)000-0000} \\
+	Department name, \\
+	Institute name, City, State 
+	\and Jenny Doe \\
+	Department name, \\
+	Institute name, City, State}
+
+% Revision date - uncomment to exclude date in the final version
+\date{}
+
+% Running head
+\pagestyle{myheadings}
+\markright{Short paper title}
+
+% We are done with the headers, the actual document starts here
+\begin{document}
+
+% generate the title page from the info in the headers above
+\maketitle
+
+% 200 words max Abstract
+\abstract{Abstract text here.
+
+\emph{Key words:} keyword 1; keyword 2; keyword 3; keyword 4; 
+keyword 5; keyword 6}
+
+% New page
+\clearpage
+
+\section*{Introduction}
+
+Citations are made using the \emph{citep} command, e.g., one paper
+\citep{el-Kareh_etal93} or more papers
+\citep{el-Kareh_etal93,Chen_Nicholson00}.  It works fine with a single
+author, two authors, or more.  Books are cited in the same way
+\citep{Callaghan91}, book chapters as well \citep{Stiles_Bartol01},
+including a chapter in press \citep{Stiles_etal04}.  Abstracts can be
+handled too \citep{Tao_etal02}.  Pages can be included in a citation
+\citep[pp.~12--18]{Callaghan91}.  Citations in a text form (i.e., author 
+name followed by the usual reference number in parenthesis) can be 
+done using the \emph{citet} command, e.g., ``an approach used 
+by \citet{el-Kareh_etal93}''.
+
+\section*{Theory}
+
+Text can reference Eq.~\ref{eqn:symmetry}
+\begin{equation} \label{eqn:symmetry}
+   \Phi(\vec{r}) = \Phi(-\vec{r})
+\end{equation}
+anywhere, as long as it is numbered.
+
+\section*{Methods}
+
+\subsection*{Subsection}
+
+\subsubsection*{Subsubsection}
+
+Further text subdivisions can be made with the \emph{subsection} and
+\emph{subsubsection} commands.
+
+\section*{Results}
+
+References to figures use the \emph{ref} command, similarly to equation
+references.  See Fig.~\ref{fig:result_fig}.
+
+\section*{Discussion}
+
+The source file for this document is called
+\emph{bj\_latex\_template.tex}.  Apart from this \LaTeX\ file, you
+will also need the bibliography file, the \BibTeX\ style file, and the
+EPS and PDF figure files.
+
+See the bibliography file \emph{bj\_bibtex\_template.bib} for the
+literature data.  It was mostly generated from the saved
+text-formatted PubMed entries using the \emph{med2bib} program and
+edited by the \emph{tkbibtex} or directly in the \emph{emacs} editor.
+
+The \emph{biophysj.bst} file is a \BibTeX\ style file that contains
+information about the format required by Biophysical Journal for the
+list of references.
+
+Figure file \emph{fig\_1.eps} was generated by \emph{xfig} program and
+converted to PDF by the \emph{epstopdf} program.  Most data plotting
+is easily accomplished by the \emph{gnuplot} program.
+
+% Compile and format the bibliography (bj_bibtex_template.bib BibTeX
+% file must be present in the document directory)
+\bibliography{bj_bibtex_template}
+
+% Figure legends
+\clearpage
+\section*{Figure Legends}
+\subsubsection*{Figure~\ref{fig:result_fig}.}
+Figure legend here.
+
+% Figures, one per page (fig_1.eps and fig_1.pdf files must be present
+% in the document directory)
+\clearpage
+\begin{figure}
+   \begin{center}
+      \includegraphics*[width=3.25in]{fig_1}
+      \caption{}
+      \label{fig:result_fig}
+   \end{center}
+\end{figure}
+
+% closing statement, nothing below matters
+\end{document}
