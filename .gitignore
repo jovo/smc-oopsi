@@ -1,5 +1,5 @@
 /old/*
-/data/*
+%/data/*
 %/docs/*
 /docs/journal_paper/old/*
 /code/glm-neal/*
