@@ -100,6 +100,11 @@ end
     Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(Sim.dt)) - M.J*log(Enew.sigma_c);      
     lik = [lik Enew.lik_c];
   end
+  
+  % % %% MLE for spike history parameters
+  % % for m=1:Sim.M
+  % %     Enew.sigma_h(m)= sum(M.v{m})/Sim.T;
+  % % end  
 
   %% MLE for observation parameters
   if Sim.F_params == true
