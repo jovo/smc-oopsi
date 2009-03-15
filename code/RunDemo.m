@@ -29,7 +29,9 @@ Sim.C_params= 1;                                    % whether to estimate calciu
 Sim.n_params= 0;                                    % whether to estimate rate governing parameters {b,k}
 Sim.h_params= 0;                                    % whether to estimate spike history parameters {h}
 Sim.F_params= 0;                                    % whether to estimate observation parameters {alpha,beta,gamma,zeta}
-Sim.MaxIter = 10;                                    % max # of EM iterartions
+Sim.MaxIter = 10;                                   % max # of EM iterartions
+Sim.Scan    = 0;                                    % scans or epi data
+
 
 %% 2) initialize parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

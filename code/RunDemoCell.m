@@ -43,6 +43,7 @@ Sim.h_params= 1;                     % estimate spike history model {h}
 Sim.F_params= 1;                     % estimate observation model {alpha,beta}
 Sim.G_params= 1;                     % estimate observation model {gamma}
 
+Sim.Scan    = 0;                     % scans or epi data
 Sim.SuppressGraphics=0;              % suppress graphics output 
 Sim.minVar=[0.1 5];                  % min variance limits for kernel dens est
 
