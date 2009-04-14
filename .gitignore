@@ -8,3 +8,5 @@
 *.swo
 .gitignore
 .DS_Store
+*.m~
+

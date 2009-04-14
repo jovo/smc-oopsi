@@ -3,7 +3,6 @@ function Enew = GOOPSI_Mstep_v1_0(Sim,S,M,E,F)
 %
 % Input---
 % Sim:  simulation parameters
-% R:    real data
 % S:    simulation results
 % M:    moments and sufficient stats
 % E:    old parameter estimates

@@ -24,7 +24,6 @@ Brustein, E., N.~Marandi, Y.~Kovalchuk, P.~Drapeau, and A.~Konnerth, 2003.
 \newblock {"In vivo"} monitoring of neuronal network activity in zebrafish by
   two-photon {Ca}$^{2+}$ imaging.
 \newblock \emph{Pflugers Arch} 446:766--773.
-\newblock \urlprefix\url{http://dx.doi.org/10.1007/s00424-003-1138-4}.
 
 \bibitem[Stosiek et~al.(2003)Stosiek, Garaschuk, Holthoff, and
   Konnerth]{StosiekKonnerth03}
@@ -40,14 +39,12 @@ Nagayama, S., S.~Zeng, W.~Xiong, M.~L. Fletcher, A.~V. Masurkar, D.~J. Davis,
 \newblock {In vivo simultaneous tracing and {Ca}$^{2+}$ imaging of local
   neuronal circuits.}
 \newblock \emph{Neuron} 53:789--803.
-\newblock \urlprefix\url{http://dx.doi.org/10.1016/j.neuron.2007.02.018}.
 
 \bibitem[Nevian and Helmchen(2007)]{NevianHelmchen07}
 Nevian, T., and F.~Helmchen, 2007.
 \newblock Calcium indicator loading of neurons using single-cell
   electroporation.
 \newblock \emph{Pflugers Arch} 454:675--688.
-\newblock \urlprefix\url{http://dx.doi.org/10.1007/s00424-007-0234-2}.
 
 \bibitem[Miyawaki et~al.(1997)Miyawaki, Llopis, Heim, McCaffery, Adams, Ikura,
   and Tsien]{MiyawakiTsien97}
@@ -64,14 +61,12 @@ Griesbeck, O., G.~S. Baird, R.~E. Campbell, D.~A. Zacharias, and R.~Y. Tsien,
 \newblock Reducing the environmental sensitivity of yellow fluorescent protein.
   Mechanism and applications.
 \newblock \emph{J Biol Chem} 276:29188--29194.
-\newblock \urlprefix\url{http://dx.doi.org/10.1074/jbc.M102815200}.
 
 \bibitem[Nakai et~al.(2001)Nakai, Ohkura, and Imoto]{NakaiImoto01}
 Nakai, J., M.~Ohkura, and K.~Imoto, 2001.
 \newblock A high signal-to-noise {Ca}$^{2+}$ probe composed of a single green
   fluorescent protein.
 \newblock \emph{Nat Biotechnol} 19:137--141.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/84397}.
 
 \bibitem[Denk et~al.(1990)Denk, Strickler, and Webb]{DenkWebb90}
 Denk, W., J.~H. Strickler, and W.~W. Webb, 1990.
@@ -97,27 +92,23 @@ Flusberg, B.~A., E.~D. Cocker, W.~Piyawattanametha, J.~C. Jung, E.~L.~M.
   Cheung, and M.~J. Schnitzer, 2005.
 \newblock Fiber-optic fluorescence imaging.
 \newblock \emph{Nat Methods} 2:941--950.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/nmeth820}.
 
 \bibitem[M\"{u}ller and Connor(1991)]{MullerConnor91}
 M\"{u}ller, W., and J.~A. Connor, 1991.
 \newblock Dendritic spines as individual neuronal compartments for synaptic
   {Ca}$^{2+}$ responses.
 \newblock \emph{Nature} 354:73--76.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/354073a0}.
 
 \bibitem[Yuste and Denk(1995)]{YusteDenk95}
 Yuste, R., and W.~Denk, 1995.
 \newblock Dendritic spines as basic functional units of neuronal integration.
 \newblock \emph{Nature} 375:682--684.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/375682a0}.
 
 \bibitem[Engert and Bonhoeffer(1999)]{EngertBonhoeffer99}
 Engert, F., and T.~Bonhoeffer, 1999.
 \newblock Dendritic spine changes associated with hippocampal long-term
   synaptic plasticity.
 \newblock \emph{Nature} 399:66--70.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/19978}.
 
 \bibitem[Nimchinsky et~al.(2004)Nimchinsky, Yasuda, Oertner, and
   Svoboda]{NimchinskySvoboda04}
@@ -125,7 +116,6 @@ Nimchinsky, E.~A., R.~Yasuda, T.~G. Oertner, and K.~Svoboda, 2004.
 \newblock The number of glutamate receptors opened by synaptic stimulation in
   single hippocampal spines.
 \newblock \emph{J Neurosci} 24:2054--2064.
-\newblock \urlprefix\url{http://dx.doi.org/10.1523/JNEUROSCI.5066-03.2004}.
 
 \bibitem[Majewska et~al.(2000)Majewska, Yiu, and Yuste]{MajewskaYuste00}
 Majewska, A., G.~Yiu, and R.~Yuste, 2000.
@@ -138,27 +128,23 @@ Scheuss, V., R.~Yasuda, A.~Sobczyk, and K.~Svoboda, 2006.
 \newblock Nonlinear [{Ca}$^{2+}$] signaling in dendrites and spines caused by
   activity-dependent depression of {Ca}$^{2+}$ extrusion.
 \newblock \emph{J Neurosci} 26:8183--8194.
-\newblock \urlprefix\url{http://dx.doi.org/10.1523/JNEUROSCI.1962-06.2006}.
 
 \bibitem[Sdrulla and Linden(2007)]{SdrullaLinden07}
 Sdrulla, A.~D., and D.~J. Linden, 2007.
 \newblock Double dissociation between long-term depression and dendritic spine
   morphology in cerebellar Purkinje cells.
 \newblock \emph{Nat Neurosci} 10:546--548.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/nn1889}.
 
 \bibitem[Majewska et~al.(2006)Majewska, Newton, and Sur]{MajewskaSur06}
 Majewska, A.~K., J.~R. Newton, and M.~Sur, 2006.
 \newblock Remodeling of synaptic structure in sensory cortical areas in vivo.
 \newblock \emph{J Neurosci} 26:3021--3029.
-\newblock \urlprefix\url{http://dx.doi.org/10.1523/JNEUROSCI.4454-05.2006}.
 
 \bibitem[Brenowitz and Regehr(2007)]{BrenowitzRegehr07}
 Brenowitz, S.~D., and W.~G. Regehr, 2007.
 \newblock Reliability and heterogeneity of calcium signaling at single
   presynaptic boutons of cerebellar granule cells.
 \newblock \emph{J Neurosci} 27:7888--7898.
-\newblock \urlprefix\url{http://dx.doi.org/10.1523/JNEUROSCI.1064-07.2007}.
 
 \bibitem[Helmchen et~al.(1996)Helmchen, Imoto, and Sakmann]{HelmchenSakmann96}
 Helmchen, F., K.~Imoto, and B.~Sakmann, 1996.
@@ -203,7 +189,6 @@ Niell, C.~M., and S.~J. Smith, 2005.
 \newblock Functional imaging reveals rapid development of visual response
   properties in the zebrafish tectum.
 \newblock \emph{Neuron} 45:941--951.
-\newblock \urlprefix\url{http://dx.doi.org/10.1016/j.neuron.2005.01.047}.
 
 \bibitem[Ohki et~al.(2005)Ohki, Chung, Ch'ng, Kara, and Reid]{OhkiReid05}
 Ohki, K., S.~Chung, Y.~H. Ch'ng, P.~Kara, and R.~C. Reid, 2005.
@@ -217,33 +202,28 @@ Ohki, K., S.~Chung, P.~Kara, M.~Hübener, T.~Bonhoeffer, and R.~C. Reid, 2006.
 \newblock Highly ordered arrangement of single neurons in orientation
   pinwheels.
 \newblock \emph{Nature} 442:925--928.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/nature05019}.
 
 \bibitem[Yaksi et~al.(2007)Yaksi, Judkewitz, and Friedrich]{YaksiFriedrich07}
 Yaksi, E., B.~Judkewitz, and R.~W. Friedrich, 2007.
 \newblock Topological Reorganization of Odor Representations in the Olfactory
   Bulb.
 \newblock \emph{PLoS Biol} 5:e178.
-\newblock \urlprefix\url{http://dx.doi.org/10.1371/journal.pbio.0050178}.
 
 \bibitem[Sato et~al.(2007)Sato, Gray, Mainen, and Svoboda]{SatoSvoboda07}
 Sato, T.~R., N.~W. Gray, Z.~F. Mainen, and K.~Svoboda, 2007.
 \newblock The Functional Microarchitecture of the Mouse Barrel Cortex.
 \newblock \emph{PLoS Biol} 5:e189.
-\newblock \urlprefix\url{http://dx.doi.org/10.1371/journal.pbio.0050189}.
 
 \bibitem[Root et~al.(2007)Root, Semmelhack, Wong, Flores, and Wang]{RootWang07}
 Root, C.~M., J.~L. Semmelhack, A.~M. Wong, J.~Flores, and J.~W. Wang, 2007.
 \newblock Propagation of olfactory information in Drosophila.
 \newblock \emph{Proc Natl Acad Sci U S A} 104:11826--11831.
-\newblock \urlprefix\url{http://dx.doi.org/10.1073/pnas.0704523104}.
 
 \bibitem[Sjulson and Miesenb\"{o}ck(2007)]{SjulsonMiesenbock07}
 Sjulson, L., and G.~Miesenb\"{o}ck, 2007.
 \newblock Optical recording of action potentials and other discrete
   physiological events: a perspective from signal detection theory.
 \newblock \emph{Physiology (Bethesda)} 22:47--55.
-\newblock \urlprefix\url{http://dx.doi.org/10.1152/physiol.00036.2006}.
 
 \bibitem[Fan et~al.(1999)Fan, Fujisaki, Miyawaki, Tsay, Tsien, and
   Ellisman]{FanEllisman99}
@@ -259,7 +239,6 @@ Nguyen, Q.~T., N.~Callamaras, C.~Hsieh, and I.~Parker, 2001.
 \newblock Construction of a two-photon microscope for video-rate {Ca}$^{2+}$
   imaging.
 \newblock \emph{Cell Calcium} 30:383--393.
-\newblock \urlprefix\url{http://dx.doi.org/10.1054/ceca.2001.0246}.
 
 \bibitem[Iyer et~al.(2006)Iyer, Hoogland, and Saggau]{IyerSaggau06}
 Iyer, V., T.~M. Hoogland, and P.~Saggau, 2006.
@@ -273,14 +252,12 @@ Pologruto, T.~A., R.~Yasuda, and K.~Svoboda, 2004.
 \newblock Monitoring neural activity and [{Ca}$^{2+}$] with genetically encoded
   {Ca}$^{2+}$ indicators.
 \newblock \emph{J Neurosci} 24:9572--9579.
-\newblock \urlprefix\url{http://dx.doi.org/10.1523/JNEUROSCI.2854-04.2004}.
 
 \bibitem[Tay et~al.(2007)Tay, Griesbeck, and Yue]{TayYue07}
 Tay, L.~H., O.~Griesbeck, and D.~T. Yue, 2007.
 \newblock {Live-Cell Transforms between Ca$^{2+}$ Transients and FRET Responses
   for a Troponin-C-Based Ca$^{2+}$ Sensor.}
 \newblock \emph{Biophys J}
-  \urlprefix\url{http://dx.doi.org/10.1529/biophysj.107.109629}.
 
 \bibitem[Yasuda et~al.(2004)Yasuda, Nimchinsky, Scheuss, Pologruto, Oertner,
   Sabatini, and Svoboda]{YasudaSvoboda04}
@@ -289,7 +266,6 @@ Yasuda, R., E.~A. Nimchinsky, V.~Scheuss, T.~A. Pologruto, T.~G. Oertner, B.~L.
 \newblock Imaging calcium concentration dynamics in small neuronal
   compartments.
 \newblock \emph{Sci STKE} 2004:pl5.
-\newblock \urlprefix\url{http://dx.doi.org/10.1126/stke.2192004pl5}.
 
 \bibitem[Reiff et~al.(2005)Reiff, Ihring, Guerrero, Isacoff, Joesch, Nakai, and
   Borst]{ReiffBorst05}
@@ -298,7 +274,6 @@ Reiff, D.~F., A.~Ihring, G.~Guerrero, E.~Y. Isacoff, M.~Joesch, J.~Nakai, and
 \newblock In vivo performance of genetically encoded indicators of neural
   activity in flies.
 \newblock \emph{J Neurosci} 25:4766--4778.
-\newblock \urlprefix\url{http://dx.doi.org/10.1523/JNEUROSCI.4900-04.2005}.
 
 \bibitem[Yaksi and Friedrich(2006)]{YaksiFriedrich06}
 Yaksi, E., and R.~W. Friedrich, 2006.
@@ -311,7 +286,6 @@ Borst, A., and H.~D.~I. Abarbanel, 2007.
 \newblock Relating a calcium indicator signal to the unperturbed calcium
   concentration time-course.
 \newblock \emph{Theor Biol Med Model} 4:7.
-\newblock \urlprefix\url{http://dx.doi.org/10.1186/1742-4682-4-7}.
 
 \bibitem[Kerr et~al.(2005)Kerr, Greenberg, and Helmchen]{KerrHelmchen05}
 Kerr, J. N.~D., D.~Greenberg, and F.~Helmchen, 2005.
@@ -324,14 +298,12 @@ Greenberg, D.~S., A.~R. Houweling, and J.~N.~D. Kerr, 2008.
 \newblock Population imaging of ongoing neuronal activity in the visual cortex
   of awake rats.
 \newblock \emph{Nat Neurosci} 11:749 -- 751.
-\newblock \urlprefix\url{http://dx.doi.org/10.1038/nn.2140}.
 
 \bibitem[Holekamp et~al.(2008)Holekamp, Turaga, and Holy]{HolekampHoly08}
 Holekamp, T.~F., D.~Turaga, and T.~E. Holy, 2008.
 \newblock Fast three-dimensional fluorescence imaging of activity in neural
   populations by objective-coupled planar illumination microscopy.
 \newblock \emph{Neuron} 57:661--672.
-\newblock \urlprefix\url{http://dx.doi.org/10.1016/j.neuron.2008.01.011}.
 
 \bibitem[Sasaki et~al.(2008)Sasaki, Takahashi, Matsuki, and
   Ikegaya]{SasakiIkegaya08}
@@ -339,7 +311,6 @@ Sasaki, T., N.~Takahashi, N.~Matsuki, and Y.~Ikegaya, 2008.
 \newblock Fast and accurate detection of action potentials from somatic calcium
   fluctuations.
 \newblock \emph{J Neurophysiol}
-  \urlprefix\url{http://dx.doi.org/10.1152/jn.00084.2008}.
 
 \bibitem[Sabatini and Regehr(1998)]{SabatiniRegehr98}
 Sabatini, B.~L., and W.~G. Regehr, 1998.
@@ -353,7 +324,6 @@ Cornelisse, L.~N., R.~A.~J. van Elburg, R.~M. Meredith, R.~Yuste, and H.~D.
 \newblock High speed two-photon imaging of calcium dynamics in dendritic
   spines: consequences for spine calcium kinetics and buffer capacity.
 \newblock \emph{PLoS ONE} 2:e1073.
-\newblock \urlprefix\url{http://dx.doi.org/10.1371/journal.pone.0001073}.
 
 \bibitem[Regehr and Atluri(1995)]{RegehrAtluri95}
 Regehr, W.~G., and P.~P. Atluri, 1995.
@@ -383,7 +353,6 @@ Brockwell, A.~E., A.~L. Rojas, and R.~E. Kass, 2004.
 \newblock {Recursive Bayesian decoding of motor cortical signals by particle
   filtering.}
 \newblock \emph{J Neurophysiol} 91:1899--1907.
-\newblock \urlprefix\url{http://dx.doi.org/10.1152/jn.00438.2003}.
 
 \bibitem[Kelly and Lee(2004)]{KellyLee04}
 Kelly, R., and T.~Lee, 2004.
@@ -409,7 +378,6 @@ Huys, Q., and L.~Paninski, 2006.
 Sanger, T.~D., 2007.
 \newblock Bayesian filtering of myoelectric signals.
 \newblock \emph{J Neurophysiol} 97:1839--1845.
-\newblock \urlprefix\url{http://dx.doi.org/10.1152/jn.00936.2006}.
 
 \bibitem[Erg\"{u}n et~al.(2007)Erg\"{u}n, Barbieri, Eden, Wilson, and
   Brown]{ErgunBrown07}
@@ -445,7 +413,6 @@ MacLean, J.~N., B.~O. Watson, G.~B. Aaron, and R.~Yuste, 2005.
 \newblock Internal dynamics determine the cortical response to thalamic
   stimulation.
 \newblock \emph{Neuron} 48:811--823.
-\newblock \urlprefix\url{http://dx.doi.org/10.1016/j.neuron.2005.09.035}.
 
 \bibitem[McCullagh and Nelder(1989)]{McCullaghNelder89}
 McCullagh, P., and J.~Nelder, 1989.
@@ -457,7 +424,6 @@ Paninski, L., J.~Pillow, and J.~Lewi, 2007.
 \newblock Statistical models for neural encoding, decoding, and optimal
   stimulus design.
 \newblock \emph{Prog Brain Res} 165:493--507.
-\newblock \urlprefix\url{http://dx.doi.org/10.1016/S0079-6123(06)65031-0}.
 
 \bibitem[Escola and Paninski(2007)]{EscolaPaninski07}
 Escola, S., and L.~Paninski, 2007.
@@ -493,7 +459,6 @@ Vogelstein~JT, Y.~R., Packer~AM, and P.~L, 2009.
 G\"{o}bel, W., and F.~Helmchen, 2007.
 \newblock In vivo calcium imaging of neural network function.
 \newblock \emph{Physiology (Bethesda)} 22:358--365.
-\newblock \urlprefix\url{http://dx.doi.org/10.1152/physiol.00032.2007}.
 
 \bibitem[Dombeck et~al.(2007)Dombeck, Khabbaz, Collman, Adelman, and
   Tank]{DombeckTank07}
@@ -501,14 +466,11 @@ Dombeck, D.~A., A.~N. Khabbaz, F.~Collman, T.~L. Adelman, and D.~W. Tank, 2007.
 \newblock Imaging large-scale neural activity with cellular resolution in
   awake, mobile mice.
 \newblock \emph{Neuron} 56:43--57.
-\newblock \urlprefix\url{http://dx.doi.org/10.1016/j.neuron.2007.08.003}.
 
 \bibitem[Tsien and Tsien(1990)]{TsienTsien90}
 Tsien, R.~W., and R.~Y. Tsien, 1990.
 \newblock Calcium channels, stores, and oscillations.
 \newblock \emph{Annu Rev Cell Biol} 6:715--760.
-\newblock
-  \urlprefix\url{http://dx.doi.org/10.1146/annurev.cb.06.110190.003435}.
 
 \bibitem[Pillow et~al.(2008)Pillow, Shlens, Paninski, Sher, A.M., Chichilnisky,
   and Simoncelli]{Pillow08}

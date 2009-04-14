@@ -42,7 +42,7 @@ Sim.x       = ones(1,Sim.T);        % stimulus, uniform firing
 
 % which parameters to estimate
 Sim.Mstep   = 1;                    % do M-step
-Sim.MaxIter = 2;                   % # of EM iterartions
+Sim.MaxIter = 15;                   % # of EM iterartions
 Sim.C_params= 1;                    % estimate calcium model {tau,A,C_0,sig}
 Sim.n_params= 1;                    % estimate rate model {b,k}
 Sim.h_params= 1;                    % estimate spike history model {h}
@@ -86,7 +86,11 @@ P.expected_slack=1.0;                % expected false up to 100%
 
 %% 3) infer nbar and estimate parameters
 
-Sim.n=double(n>0); Sim.n(Sim.n==0)=NaN;%for plotting purposes
+if exist('n','var')
+    Sim.n=double(n>0); Sim.n(Sim.n==0)=NaN;%for plotting purposes
+else
+    Sim.n=NaN*F;
+end
 warning off
 [I.M I.P]   = GOOPSI_main_v1_0(F,P,Sim);
 I.n         = I.M.nbar;

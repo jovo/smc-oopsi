@@ -14,9 +14,9 @@ clear, clc, fprintf('\nDemo\n')
 
 Sim.T       = 230;                                  % # of time steps
 Sim.dt      = 1/100;                                % time step size
-Sim.freq    = 1;                                    % # of time steps between observations
+Sim.freq    = 4;                                    % # of time steps between observations
 Sim.Nsec    = Sim.T*Sim.dt;                         % # of actual seconds
-Sim.T_o     = Sim.T;                                % # of observations
+Sim.T_o     = Sim.T*Sim.freq;                                % # of observations
 Sim.tvec    = Sim.dt:Sim.dt:Sim.Nsec;               % vector of times
 Sim.N       = 100;                                  % # of particles
 Sim.M       = 1;                                    % number of spike history dimensions
