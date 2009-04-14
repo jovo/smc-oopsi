@@ -24,6 +24,7 @@ function S = GOOPSI_forward_v1_0(Sim,F,P)
 S.p     = zeros(Sim.N,Sim.T);                   % extize rate
 S.n     = false(Sim.N,Sim.T);                   % extize spike counts
 S.C     = P.C_init*ones(Sim.N,Sim.T);           % extize calcium
+S.F     = zeros(Sim.N,Sim.T);                   % extize fluorescence
 S.w_f   = 1/Sim.N*ones(Sim.N,Sim.T);            % extize forward weights
 S.w_b   = 1/Sim.N*ones(Sim.N,Sim.T);            % extize forward weights
 S.Neff  = 1/Sim.N*ones(1,Sim.T_o);              % extize N_{eff}
@@ -95,7 +96,7 @@ for t=Sim.freq+1:Sim.T-Sim.freq
   else                                      % otherwise use conditional sampler
     S = cond_sampler(Sim,F,P,S,O,A,t,s);
   end
-  
+
   S.C(:,t)=S.next_C;                        % done to speed things up for older
   S.n(:,t)=S.next_n;                        % matlab, having issues with from-function
   S.w_f(:,t)=S.next_w_f;                    % update calls to large structures
@@ -126,7 +127,7 @@ for t=Sim.freq+1:Sim.T-Sim.freq
 
     O = update_moments(Sim,F,P,S,O,A,t);    % estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
     s = t;                                  % store time of last observation
-    
+
   end
 
   if mod(t,100)==0
@@ -181,6 +182,7 @@ end %init_lik
 %% update moments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function O = update_moments(Sim,F,P,S,O,A,t)
+%%%% maybe make a better proposal for epi
 
 s           = Sim.freq;                 % find next observation time
 
@@ -265,11 +267,12 @@ end
 S.next_n        = A.U_sampl(:,t)<S.p(:,t);      % sample n
 S.next_C        = (1-P.a)*S.C(:,t-1)+P.A*S.next_n+P.a*P.C_0+A.epsilon_c(:,t);% sample C
 
-% get weights at every observation
+% get weights at every observation            %THIS NEEDS FIX FOR EPI DATA
 if mod(t,Sim.freq)==0
   S_mu        = Hill_v1(P,S.next_C);
   F_mu        = P.alpha*S_mu+P.beta;   % compute E[F_t]
   F_var       = P.gamma*S_mu+P.zeta;   % compute V[F_t]
+  %%%% this must also change for epi
   ln_w        = -0.5*(F(t)-F_mu).^2./F_var - log(F_var)/2;% compute log of weights
   ln_w        = ln_w-max(ln_w);                       % subtract the max to avoid rounding errors
   w           = exp(ln_w);                            % exponentiate to get actual weights
@@ -359,8 +362,12 @@ S.next_C    = normrnd(m_c,sqrt(v_c));       % sample C
 % update weights
 if mod(t,Sim.freq)==0                       % at observations compute P(O|H)
   S_mu        = Hill_v1(P,S.next_C);
+  if Sim.Scan==0                            % when doing epi, also add previous time steps
+    for tt=s+1:t-1, S_mu=S_mu+Hill_v1(P,S.C(s+tt)); end
+  end
   F_mu        = P.alpha*S_mu+P.beta;        % compute E[F_t]
   F_var       = P.gamma*S_mu+P.zeta;        % compute V[F_t]
+  %%%% log_PO_H must change for epi
   log_PO_H    = -0.5*(F(t)-F_mu).^2./F_var - log(F_var)/2;    % compute log of weights
 else                                        % when no observations are present, P[O|H^{(i)}] are all equal
   log_PO_H    = (1/Sim.N)*A.oney;
@@ -386,30 +393,30 @@ end %condtional sampler
 
 %% stratified resample
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function S = strat_resample(Sim,S,t,U_resamp)
-% Inputs:
-% Sim       : simulation parameters (eg, dt, N, etc.)
-% S         : simulation states (eg, n, lambda, C, h)
-% t         : current time step index
-% U_resamp  : resampling matrix (so that i needed generate random numbers
-%             which each resample, but rather, can just call them
-% Outputs a structure S, which has particle states having resampled them, and equalized weights
-
-Nresamp=t/Sim.freq;                         % increase sample counter
-S.Neff(Nresamp)  = 1/sum(S.w_f(:,t).^2);    % store N_{eff}
-
-% if weights are degenerate or we are doing prior sampling then resample
-if S.Neff(Nresamp) < Sim.N/2 || Sim.pf==0
-  [foo,ind]   = histc(U_resamp(Nresamp,:),[0  cumsum(S.w_f(:,t))']);
-  [ri,ri]     = sort(rand(Sim.N,1));      % these 3 lines stratified resample
-  ind         = ind(ri);
-
-  S.p(:,t-Sim.freq+1:t)   = S.p(ind,t-Sim.freq+1:t);      % resample probabilities (necessary?)
-  S.n(:,t-Sim.freq+1:t)   = S.n(ind,t-Sim.freq+1:t);      % resample calcium
-  S.C(:,t-Sim.freq+1:t)   = S.C(ind,t-Sim.freq+1:t);      % resample calcium
-  S.w_f(:,t-Sim.freq+1:t) = 1/Sim.N*ones(Sim.N,Sim.freq); % reset weights
-  if Sim.M>0                                              % if spike history terms
-    S.h(:,t-Sim.freq+1:t,:) = S.h(ind,t-Sim.freq+1:t,:);% resample all h's
-  end
-end %function
-end
+% function S = strat_resample(Sim,S,t,U_resamp)
+% % Inputs:
+% % Sim       : simulation parameters (eg, dt, N, etc.)
+% % S         : simulation states (eg, n, lambda, C, h)
+% % t         : current time step index
+% % U_resamp  : resampling matrix (so that i needed generate random numbers
+% %             which each resample, but rather, can just call them
+% % Outputs a structure S, which has particle states having resampled them, and equalized weights
+%
+% Nresamp=t/Sim.freq;                         % increase sample counter
+% S.Neff(Nresamp)  = 1/sum(S.w_f(:,t).^2);    % store N_{eff}
+%
+% % if weights are degenerate or we are doing prior sampling then resample
+% if S.Neff(Nresamp) < Sim.N/2 || Sim.pf==0
+%   [foo,ind]   = histc(U_resamp(Nresamp,:),[0  cumsum(S.w_f(:,t))']);
+%   [ri,ri]     = sort(rand(Sim.N,1));      % these 3 lines stratified resample
+%   ind         = ind(ri);
+%
+%   S.p(:,t-Sim.freq+1:t)   = S.p(ind,t-Sim.freq+1:t);      % resample probabilities (necessary?)
+%   S.n(:,t-Sim.freq+1:t)   = S.n(ind,t-Sim.freq+1:t);      % resample calcium
+%   S.C(:,t-Sim.freq+1:t)   = S.C(ind,t-Sim.freq+1:t);      % resample calcium
+%   S.w_f(:,t-Sim.freq+1:t) = 1/Sim.N*ones(Sim.N,Sim.freq); % reset weights
+%   if Sim.M>0                                              % if spike history terms
+%     S.h(:,t-Sim.freq+1:t,:) = S.h(ind,t-Sim.freq+1:t,:);% resample all h's
+%   end
+% end %function
+% end
