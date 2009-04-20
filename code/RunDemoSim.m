@@ -6,8 +6,8 @@ rate=10;                    % assumed firing rate
 SNR=3.5;                    % assumed A_[Ca]/Noise[Ca]
 BGR=4;                      % assumed A_[Ca]/BGR[Ca]
 
-for frame_rate=[100 60 30 10]% do these frame rates
-  for ph=[1e5 1e4 1e3]       % do these photo counts
+for frame_rate=10;%[100 60 30 10]% do these frame rates
+  for ph=1e3;%[1e5 1e4 1e3]       % do these photo counts
 
     if(rate  > frame_rate) continue; end%don't do this
 

@@ -1,4 +1,3 @@
-<<<<<<< HEAD:code/RunDemoCell.m
 %This script fits a cell and prepares parameters for glm-SMC sampler
 clear, clc, fprintf('\nfit cell ')
 
@@ -186,7 +185,7 @@ Z(4:end-3,:,1)=nf;
 Z(4:end-3,:,2)=nf;
 Z(4:end-3,:,3)=nf;
 h3=figure;clf,imagesc(im2uint8(Z)),colormap gray,title(s)
-=======
+
 %This script fits a cell and prepares parameters for glm-SMC sampler
 clear, clc, fprintf('\nfit cell ')
 
@@ -370,4 +369,3 @@ Z(4:end-3,:,1)=nf;
 Z(4:end-3,:,2)=nf;
 Z(4:end-3,:,3)=nf;
 h3=figure;clf,imagesc(im2uint8(Z)),colormap gray,title(s)
->>>>>>> 07cada25d8fc778d8a2a1784c687019346deedb9:code/RunDemoCell.m

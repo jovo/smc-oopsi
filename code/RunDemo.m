@@ -10,7 +10,6 @@
 clear, clc, fprintf('\nDemo\n')
 
 %% 1) set simulation metadata
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Sim.T       = 230;                                  % # of time steps
 Sim.dt      = 1/100;                                % time step size
@@ -31,9 +30,9 @@ Sim.h_params= 0;                                    % whether to estimate spike 
 Sim.F_params= 0;                                    % whether to estimate observation parameters {alpha,beta,gamma,zeta}
 Sim.MaxIter = 10;                                   % max # of EM iterartions
 Sim.Scan    = 0;                                    % scans or epi data
+Sim.SuppressGraphics = 0;                           % whether to plot results with each iteration
 
 %% 2) initialize parameters
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % initialize barrier and wiener filter parameters
 P.rate  = 50/(Sim.T*Sim.dt);                        % expected spike rate
@@ -64,7 +63,7 @@ if Sim.M==1                                         % if there are spike history
 end
 
 %% 3) simulate data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 kx        = P.k'*Sim.x;                             %external input to neuron
 epsilon_c = P.sigma_c*sqrt(Sim.dt)*randn(1,Sim.T);  %generate noise on calcium
 U_sampl   = rand(1,Sim.T);                          %generate random number to use for sampling
@@ -98,15 +97,14 @@ plot(z1(Sim.x),'k');
 Sim.n = double(n); Sim.n(Sim.n==0)=NaN;             % for plotting purposes in ParticleFiltD
 
 %% 4) infer spikes and estimate parameters
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-P.A = 2*P.A;
+P.A = 1.5*P.A;
 [I.M I.P]   = GOOPSI_main_v1_0(F,P,Sim);
 I.n         = I.M.nbar;
 save StimSim
 
 %% 5) plot results
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 load('StimSim.mat')
 fig     = figure(2); clf,
 nrows   = 7;
