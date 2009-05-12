@@ -1,0 +1,11 @@
+This folder has the following structure:
+
+-- figs
+   - data:	data used in figures
+   - graphics:  pdf's and ps's files for each figure
+   - scripts: 	.m to generate the figs
+   - functions: code called by scripts to make figures 
+-- text:  	tex (and necessary supplementary files)	
+
+
+Contact Joshua Vogelstein (joshuav@jhu.edu) with questions/comments.

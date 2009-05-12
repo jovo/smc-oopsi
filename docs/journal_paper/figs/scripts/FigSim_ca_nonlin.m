@@ -1,6 +1,7 @@
-function ca_nonlin3(o)
+function ca_nonlin(o)
 % F ~ N[f(C),g(C)]
 
+if nargin==0, o=.8; end
 [n k_d alpha beta gamma zeta] = GetParams;
 
 if o > alpha+beta || o < beta
