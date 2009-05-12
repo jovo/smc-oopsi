@@ -202,7 +202,7 @@ lw=2;                               % line width
 tl=[.05 0.25];                      %tick length
 i=0;
 xtick=[15 30 45];%vec(end):vec(end):Sim.T;
-yshift = .15;
+yshift = .05;
 
 for sub=1:length(vec)
     for nois=1:length(vec)
@@ -214,13 +214,10 @@ for sub=1:length(vec)
         BarVar=I{sub,nois}.M.nbar+I{sub,nois}.M.nvar; BarVar(BarVar>1)=1;
         spts=find(BarVar>1e-3);
         stem(spts,BarVar(spts),'Marker','none','LineWidth',sw,'Color',gray);
-%         bar(spts,BarVar(spts),'EdgeColor',gray,'FaceColor','w');%,'Marker','none','LineWidth',sw,'Color',gray);        
         spts=find(I{sub,nois}.M.nbar>1e-3);
         stem(spts,I{sub,nois}.M.nbar(spts),'Marker','none','LineWidth',sw,'Color','k')
-        stem(spt,1.1*Sim.n(spt),'Marker','v','MarkerSize',ms2,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
+        stem(spt,Sim.n(spt)*1.1,'Marker','v','MarkerSize',ms2,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
         axis([xlims 0 2+yshift])
-        axis('tight')
-        box('off')
         set(gca,'YTick',0:2,'YTickLabel',[],'XTick',xtick,'XTickLabel',[],'FontName',fn,'TickLength',tl)
         
         plot(ones(1,Sim.T),'k')
@@ -267,4 +264,4 @@ text('Position',[-85 -1.12],...
 wh=[7 5];   %width and height
 set(gcf,'PaperSize',wh);
 set(fig,'PaperPosition',[0 11-wh(2) wh]);
-print('-depsc','ArraySim_bw')
+print('-depsc','ArraySim')
