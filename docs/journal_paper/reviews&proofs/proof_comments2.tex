@@ -1,0 +1,74 @@
+\input{/Users/joshyv/Research/misc/latex_paper} 
+\title{Proof Corrections}
+\author{Joshua Vogelstein}
+
+\begin{document}
+\maketitle
+Items are enumerated as in the faxed document.
+
+\begin{enumerate}
+
+\item Remove the word ``the''
+\item Replace``significant recent progress'' with ``significant progress recently''
+\item Replace ``Earlier this year'' with ``Last year''
+\item Two comments on Equation (2)
+\ita 
+\item Break this equation (into multiple lines) at the $=$ 
+\item Replace $\varepsilon_t$ with $\varepsilon_{c,t}$
+\itb
+\item Replace ``$t$th'' with ``$t$-th''
+\item It seems as if in $\Ca_b$, the ``$b$'' is bold.  It should not be.
+\item Replace ``referred to as'' with ``called''
+\item Replace ``i)'' and ``ii)'' with ``(i)'' and ``(ii)'', respectively 
+\item Replace $\frac{def}{=}$ with $\overset{def}{=}$, ie, the ``$=$'' should be in line with the rest of the equation, and the ``def'' should be just above it in a smaller font.  This is a recurring problem.  \label{def}
+\item Same as \ref{def}
+\item Multiple comments on Equation (6)
+\ita
+\item Same as \ref{def}
+\item Replace stuff after $=$ with
+\begin{align}
+\begin{cases}
+\mathcal{N}\big(\Ca_t; \widehat{\mu}(n_t), \sigma_c^2 \Delta\big) (p \Delta)& \text{if } n_t=1 \\
+\mathcal{N}\big(\Ca_t; \widehat{\mu}(n_t), \sigma_c^2 \Delta\big) (1-p \Delta)& \text{otherwise,}\\
+\end{cases}
+\end{align}
+\item Try to fit within a single column, given the above substitution
+\itb
+\item Replace ``Now the goal is to efficiently estimate $\p(\ve{H}_t | \ve{O}_{1:T})=\p(n_t, \Ca_t \mid F_{1:T})$  for all $t$, the posterior distribution of the hidden signals, given all the observations.'' with `` Now the goal is to efficiently estimate $\p(\ve{H}_t | \ve{O}_{1:T})=\p(n_t, \Ca_t \mid F_{1:T})$, the posterior distribution of the hidden signals, given all the observations, for all $t$. ''
+\item Replace ``$P_{\bth (\bH_t | \bO_{1:t})}$'' with ``$\p(\bH_t | \bO_{1:t})$'', ie, only the $\bth$ gets subscripted.
+\item In Equation (9), after the final $=$, it should read: $$  \p \big( F_t \mid \Ca_t^{(i)} \big) \p \big( \Ca_t^{(i)}   \mid \Ca^{(i)}_{t-1}, n_t^{(i)} \big)  \p \big( n_t^{(i)} \big)/Z, $$  The only acceptable places to put line breaks are between the ``$)$'''s and ``$P$'''s.
+\item Replace ``$\{n_t,\Ca_t\}$'' with ``$n_t$ or $\Ca_t$''
+\item Two remakrs about Equation (12)
+\ita
+\item Replace $$\frac{\argmax}{\bth}$$ with $$\argmax_{\bth}$$ (note that argmax goes in line with the rest of the text, and $\bth$ goes below it in a smaller font, similar to \ref{def}).
+\item Note that the $\bth$ should be in bold.
+\item The ``,'' should be after the final ``$)$'', not before
+\itb
+\item The ``$\theta'$'' should be ``$\bth'$'', ie, bold.
+\item Replace ``variance'' with ``noise term''
+\item Remove ``Main Result.'' 
+\item Remove sentence ``Note that\ldots of generality.''
+\item See \ref{def}
+\item Repalce ``($\q=\p(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(i)}, \ve{O}_t)$)'' with   ``, $\q=\p(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(i)}, \ve{O}_t)$,''
+\item Replace ``($n_{1:T}$)'' with ``, $n_{1:T}$'' and ``($\tau$)'' with ``, $\tau$,''
+\item Remove ``Saturated simulation.''
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
