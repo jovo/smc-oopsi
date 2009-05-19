@@ -6,8 +6,9 @@
 \maketitle
 Items are enumerated as in the faxed document.
 
-\begin{enumerate}
+\section{Main article errors}
 
+\begin{enumerate}
 \item Remove the word ``the''
 \item Replace``significant recent progress'' with ``significant progress recently''
 \item Replace ``Earlier this year'' with ``Last year''
@@ -52,23 +53,39 @@ Items are enumerated as in the faxed document.
 \item Repalce ``($\q=\p(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(i)}, \ve{O}_t)$)'' with   ``, $\q=\p(\ve{H}_t^{(i)} | \ve{H}_{t-1}^{(i)}, \ve{O}_t)$,''
 \item Replace ``($n_{1:T}$)'' with ``, $n_{1:T}$'' and ``($\tau$)'' with ``, $\tau$,''
 \item Remove ``Saturated simulation.''
+\item Replace ``$\xi=4 \times 10^{-4}$ a.u.'' with ``$\xi=4 \times 10^{-4}$ $\mu$A/photon, and replace $\sig_F=10^{-4}$ a.u.'' with ``$\sig_F=10^{-4}$ $\mu$A''
+\item Remove ``In vitro bursts.''
+\item Replace ``i)'' with ``(i)'' 
+\item Remove ``Real data saturation''
+\item Replace and ``ii)'' with ``(ii)''
+\item Add the word ``its'' between ``zero with'' and ``time constant''
+\item Remove ``Array of inferences.''
+\item Remove ``Generalized linear model particle filter smoother.''
+\item Remove ``In vitro data superresolution''
+\item Replace ``PFS both improves inference accuracy over the optimal linear method and provides'' with ``PFS both (i) improves inference accuracy over the optimal linear method and (ii) provides''
+\item Replace ``$\{\alpha,\beta,\sig_F\}$'' with ``$\{\alpha, \beta, \xi, \sig_F\}$''
+\item Replace ``i)'' with ``(i)'' and ``ii)'' with ``(ii)''
 \end{enumerate}
 
+\section{Appendix errors}
 
+\begin{enumerate}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+\item Two things
+\ita 
+\item See \ref{def}
+\item Break at $=$
+\itb
+\item Break into two lines if possible
+\item Try to into two lines
+\item Replace ``$\{\Ca_{t-1}\}^{(i)}$'' with ``$\Ca_{t-1}^{(i)}$''
+\item Equation (34) should be rewritten as below.  Note the location of the line break
+\begin{multline}
+g'(x) = \left(\frac{k_d (\beta -F_t)}{F_t - \beta - \alpha}\right)^{1/n}  \frac{n k_d (\beta - F_t)}{F-\beta-\alpha} \\ 
+\left(-\frac{k_d}{F-\beta-\alpha}-\frac{k_d(\beta-F_t)}{(F_t-\beta-\alpha)^2}\right).
+\end{multline}
+\item Replace ``are function of all the parameters: $\alpha, \beta, \xi, \sig_F, n$ and $k_d$'' with ``are function of $\{\alpha, \, \beta, \, \xi, \, \sig_F, \, n, \, k_d\}$''
+\item 
+\end{enumerate}
 
 \end{document}

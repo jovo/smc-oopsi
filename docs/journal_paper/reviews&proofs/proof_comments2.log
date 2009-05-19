@@ -1,4 +1,4 @@
-This is pdfeTeXk, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) (format=latex 2009.4.16)  13 MAY 2009 12:38
+This is pdfeTeXk, Version 3.141592-1.21a-2.2 (Web2C 7.5.4) (format=latex 2009.4.16)  14 MAY 2009 20:54
 entering extended mode
  Source specials enabled.
 **proof_comments2.tex
@@ -214,24 +214,26 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 6.
 (/opt/local/share/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2002/01/19 v2.2g AMS font definitions
 )
-LaTeX Font Info:    Try loading font information for OMS+ptm on input line 16.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <14.4> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 9.
+LaTeX Font Info:    Try loading font information for OMS+ptm on input line 17.
 
 (/opt/local/share/texmf-dist/tex/latex/psnfss/omsptm.fd
 File: omsptm.fd 
 )
 LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 16.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 17.
  [1
 
-] [2]
+] [2] [3]
 (./proof_comments2.aux) ) 
 Here is how much of TeX's memory you used:
- 2280 strings out of 94501
- 23026 string characters out of 1155436
+ 2285 strings out of 94501
+ 23087 string characters out of 1155436
  79463 words of memory out of 1000000
- 5416 multiletter control sequences out of 10000+50000
- 15814 words of font info for 55 fonts, out of 500000 for 2000
+ 5420 multiletter control sequences out of 10000+50000
+ 16840 words of font info for 57 fonts, out of 500000 for 2000
  580 hyphenation exceptions out of 1000
- 30i,18n,43p,446b,337s stack positions out of 1500i,500n,5000p,200000b,5000s
+ 31i,18n,43p,446b,374s stack positions out of 1500i,500n,5000p,200000b,5000s
 
-Output written on proof_comments2.dvi (2 pages, 6892 bytes).
+Output written on proof_comments2.dvi (3 pages, 10384 bytes).
