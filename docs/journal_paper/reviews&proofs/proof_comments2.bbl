@@ -1,0 +1,85 @@
+\begin{thebibliography}{}
+
+\bibitem[Borst and Abarbanel, 2007]{BorstAbarbanel07}
+Borst, A. and Abarbanel, H. D.~I. (2007).
+\newblock Relating a calcium indicator signal to the unperturbed calcium
+  concentration time-course.
+\newblock {\em Theor Biol Med Model}, 4(1):7.
+
+\bibitem[Dempster et~al., 1977]{DempsterRubin77}
+Dempster, A., Laird, N., Rubin, D., et~al. (1977).
+\newblock {Maximum likelihood from incomplete data via the EM algorithm}.
+\newblock {\em Journal of the Royal Statistical Society. Series B
+  (Methodological)}, 39(1):1--38.
+
+\bibitem[Huys and Paninski, 2009]{HuysPaninski09}
+Huys, Q. and Paninski, L. (2009).
+\newblock {Smoothing of, and Parameter Estimation from, Noisy Biophysical
+  Recordings}.
+\newblock {\em PLoS Comput Biol}, 5(5):e1000379.
+
+\bibitem[Kalman, 1960]{Kalman60}
+Kalman, R. (1960).
+\newblock {A new approach to linear filtering and prediction problems}.
+\newblock {\em Transactions of the ASME --- Journal of Basic Engineering},
+  82(1):35--45.
+
+\bibitem[Paninski et~al., 2004]{Paninski04}
+Paninski, L., Pillow, J.~W., and Simoncelli, E.~P. (2004).
+\newblock Maximum likelihood estimation of a stochastic integrate-and-fire
+  neural encoding model.
+\newblock {\em Neural Computation}, 16(12):2533--2561.
+
+\bibitem[Pillow et~al., 2008]{PillowSimoncelli08}
+Pillow, J., Shlens, J., Paninski, L., Sher, A., Litke, A., Chichilnisky, E.,
+  and Simoncelli, E. (2008).
+\newblock Spatiotemporal correlations and visual signaling in a complete
+  neuronal population.
+\newblock {\em Nature}, 454(7207):995--9.
+
+\bibitem[Samejima et~al., 2004]{SamejimaKimura04}
+Samejima, K., Doya, K., Ueda, Y., and Kimura, M. (2004).
+\newblock {Estimating internal variables and parameters of a learning agent by
+  a particle filter}.
+\newblock {\em Advances in Neural Information Processing Systems}, 16.
+
+\bibitem[Sasaki et~al., 2008]{SasakiIkegaya08}
+Sasaki, T., Takahashi, N., Matsuki, N., and Ikegaya, Y. (2008).
+\newblock Fast and accurate detection of action potentials from somatic calcium
+  fluctuations.
+\newblock {\em Journal of Neurophysiology}, 100(3):1668.
+
+\bibitem[Shumway and Stoffer, 2006]{ShumwayStoffer06}
+Shumway, R. and Stoffer, D. (2006).
+\newblock {\em {Time Series Analysis and Its Applications}}.
+\newblock Springer, New York, NY, 2nd edition.
+
+\bibitem[Smith et~al., 2001]{DoucetGordon01}
+Smith, A., Doucet, A., de~Freitas, N., and Gordon, N. (2001).
+\newblock {\em Sequential Monte Carlo Methods in Practice}.
+\newblock Springer, New York.
+
+\bibitem[Tay et~al., 2007]{TayYue07}
+Tay, L.~H., Griesbeck, O., and Yue, D.~T. (2007).
+\newblock {Live-Cell Transforms between Ca$^{2+}$ Transients and FRET Responses
+  for a Troponin-C-Based Ca$^{2+}$ Sensor.}
+\newblock {\em Biophys J}, 93(11):4031--4040.
+
+\bibitem[Vogelstein et~al., 2009]{VogelsteinPaninski09a}
+Vogelstein, J., Packer, A., Yuste, R., and Paninski, L. (2009).
+\newblock Towards inferring neural circuits from population calcium imaging.
+\newblock {\em Frontiers in Systems Neuroscience. Conference Abstract:
+  Computational and systems neuroscience}.
+
+\bibitem[Yasuda et~al., 2004]{YasudaSvoboda04}
+Yasuda, R., Nimchinsky, E.~A., Scheuss, V., Pologruto, T.~A., Oertner, T.~G.,
+  Sabatini, B.~L., and Svoboda, K. (2004).
+\newblock Imaging calcium concentration dynamics in small neuronal
+  compartments.
+\newblock {\em Sci STKE}, 2004(219):pl5.
+
+\bibitem[Yuste and Konnerth, 2006]{YusteKonnerth06}
+Yuste, R. and Konnerth, A. (2006).
+\newblock {\em {Imaging in Neuroscience and Development, A Laboratory Manual}}.
+
+\end{thebibliography}

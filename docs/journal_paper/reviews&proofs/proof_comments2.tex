@@ -27,12 +27,12 @@ Items are enumerated as in the faxed document.
 \ita
 \item Same as \ref{def}
 \item Replace stuff after $=$ with
-\begin{align}
+\begin{align*}
 \begin{cases}
 \mathcal{N}\big(\Ca_t; \widehat{\mu}(n_t), \sigma_c^2 \Delta\big) (p \Delta)& \text{if } n_t=1 \\
 \mathcal{N}\big(\Ca_t; \widehat{\mu}(n_t), \sigma_c^2 \Delta\big) (1-p \Delta)& \text{otherwise,}\\
 \end{cases}
-\end{align}
+\end{align*}
 \item Try to fit within a single column, given the above substitution
 \itb
 \item Replace ``Now the goal is to efficiently estimate $\p(\ve{H}_t | \ve{O}_{1:T})=\p(n_t, \Ca_t \mid F_{1:T})$  for all $t$, the posterior distribution of the hidden signals, given all the observations.'' with `` Now the goal is to efficiently estimate $\p(\ve{H}_t | \ve{O}_{1:T})=\p(n_t, \Ca_t \mid F_{1:T})$, the posterior distribution of the hidden signals, given all the observations, for all $t$. ''
@@ -80,12 +80,132 @@ Items are enumerated as in the faxed document.
 \item Try to into two lines
 \item Replace ``$\{\Ca_{t-1}\}^{(i)}$'' with ``$\Ca_{t-1}^{(i)}$''
 \item Equation (34) should be rewritten as below.  Note the location of the line break
-\begin{multline}
+\begin{multline*}
 g'(x) = \left(\frac{k_d (\beta -F_t)}{F_t - \beta - \alpha}\right)^{1/n}  \frac{n k_d (\beta - F_t)}{F-\beta-\alpha} \\ 
 \left(-\frac{k_d}{F-\beta-\alpha}-\frac{k_d(\beta-F_t)}{(F_t-\beta-\alpha)^2}\right).
-\end{multline}
+\end{multline*}
 \item Replace ``are function of all the parameters: $\alpha, \beta, \xi, \sig_F, n$ and $k_d$'' with ``are function of $\{\alpha, \, \beta, \, \xi, \, \sig_F, \, n, \, k_d\}$''
-\item 
+\item Line break after $=$ sign
+\item Two things
+\ita \item See \ref{def} \item Replace cent sign with $\mathbb{Z}$ \itb
+\item Replace ' with $\mathbb{Z}$
+\item Remove ``Laplace \ldots distribution.''
+\item Replace ``The circles'' with ``The filled circles''
+\item Line beginning with $q_{\bth}^S$ should not be indented
+\item (10) and (11) should not be links to references, they are sequences
+\item Remove ``Sampling strategies:'' and capitalize ``the'' 
+\item (10) is a sequence, not a reference, no link
+\item Remove ``Mixture approximation:'' and capitalize ``appropriate''
+\item ``Computing\ldots'' should be a one level down in the heading hierarchy
+\item This equation should not have a line break where the second line break is.  I suggest:
+\begin{multline*} 
+\p^{NL}(F_v \mid \Ca_{v-1}) = \sum_{n=0,1} a_{n,v-1} \\
+\int \p^{NL}(F_v \mid \Ca_v) \p(\Ca_v \mid \Ca_{v-1}, n_v=n) d\Ca_v,
+\end{multline*}
+or 
+\begin{multline*} 
+\p^{NL}(F_v \mid \Ca_{v-1}) = \sum_{n=0,1} a_{n,v-1} \int \p^{NL}(F_v \mid \Ca_v) \\
+ \p(\Ca_v \mid \Ca_{v-1}, n_v=n) d\Ca_v,
+\end{multline*}
+\item ``$a_{1, \quad v-1}$'' should be ``$a_{1,v-1}$'', ie, there seems to be a space between the comma and the 'v', which should not be present. same is true for $a_{0,v-1}$.  This problem repeats in several places \label{comma}
+\item Indenting is totally inappropriate.  Please use:
+\begin{multline*}
+\p(\Ca_v \mid \Ca_{v-1}, n_v) =\\
+\mathcal{N}(\Ca_v; \Ca_{v-1} -\Delta/\tau (\Ca_{v-1} - \Ca_b) + A n_v, \sigma_c^2 \Delta),
+\end{multline*}
+\item Line break is again inappropriate.  replace with
+\begin{multline*}
+\int \p^{NL}(F_v \mid \Ca_v) \p(\Ca_v \mid \Ca_{v-1}, n_v=n) d\Ca_v
+\\= \int \mathcal{N}\big(\Ca_v; \widetilde{\mu}_v, \widetilde{\sigma}_v^2\big)  \times \mathcal{N}(\Ca_v; \Ca_{v-1} -\Delta/\tau (\Ca_{v-1} - \Ca_b) + A n_v, \sigma_c^2 \Delta).
+\end{multline*}
+\item Replace $\chi$ with $C_v$
+\item Replace $\chi$ with $C_v$
+\item Line break should be:
+\begin{multline*}
+\p^{NL}(F_v \mid \Ca_{v-1}) = \\ \sum_{n=0,1} a_{n,v-1}  \mathcal{N} \left(\Ca_{v-1}; \widetilde{\mu}^{S}_v(n), (\widetilde{\sigma}_v^S)^2 \right),%\mathcal{N}\left(\Ca_{v-1};\frac{ \widetilde{\mu}_v- A n_v - \frac{\Delta}{\tau} \Ca_b}{1-\frac{\Delta}{\tau}}, \frac{\widetilde{\sigma}_v^2 + \sigma_c^2 \Delta}{(1-\frac{\Delta}{\tau})^2}\right),
+\end{multline*}
+\item  Line break inappropriate.  Replace with:
+
+\begin{multline*} 
+\p^{NL}(F_v \mid \Ca_{t-1}) =\\ \sum_{n=0,1} a_{n,t-1}
+\sum_{m=1}^{2^{v-t}} a_{mt} \mathcal{N}\left(\Ca_{t-1}; \widetilde{\mu}^{S}_{mt}(n),(\widetilde{\sigma}^S_t)^2 \right), %= \sum_m^{2^{v-(t-1)}} a_m \mathcal{N}(\Ca_{t-1}; \mu_{mt}, \sigma_t^2)
+\end{multline*}
+\item ``Superresolution sampling spikes'' should be one level down in hierarchy, ie, it should be indented \label{ind}
+\item Replace ${n_t}^{(i)}$ with $n_t^{(i)}$, ie, the $(i)$ should be directly above $t$, not off to the side.  this happens in 3 places on this line, and elsewhere \label{n}
+\item ``Superresolution\dots'' should be indented, just as \ref{ind}
+\item See \ref{n}
+\item See \ref{n} (twice on this line)
+\item Line break is inappropriate, move it to after $=$
+\item Same as \ref{comma}
+\item Same as \ref{comma}
+\item Two comments on this equation
+\ita
+\item Replace $\frac{\argmax}{\{b,\bk,\bomega\}}$ with $$\argmax_{\{b,\bk,\bomega\}}$$ in both instances (ie, argmax goes in line with the rest, $\{b,\bk,\bomega\}$ goes under in a smaller font
+\item (61) should be on the bottom line, not the middle one
+\itb
+\item Replace $\overset{\argmax}{\tau,A,\Ca_b,\sig_c}$ with $$\argmax_{\tau,A,\Ca_b\geq 0}$$.  Note a few differences
+\ena
+\item argmax is inline with rest of text, the other stuff is below
+\item $\sig_c$ has been replaced with $\leq$
+\enb
+\item Again, argmin should go inline, $x>0$ should go underneath.  equation should look like
+\begin{align*} 
+\widehat{\ve{x}} = \argmin_{\ve{x} > 0} \frac{1}{2}\ve{x}' \ve{Q} \ve{x} + \ve{L}' \ve{x},
+\end{align*}
+\item Remove $\times$
+\item Same deal again with the argmin, equation should look like:
+\begin{equation*}
+\begin{split}
+\widehat{\ve{x}} &= \frac{1}{2}  \argmin_{\ve{x_p} \geq 0, \forall p} \sum_{t=1}^T \sum_{i,j=1}^N J^{(i,j)}_{t,t-1}  \norm{\ve{C}^{(i,j)}_t \ve{x} + d^{(i,j)}_t}_2^2,
+\end{split}
+\end{equation*}
+\item Again with the argmax, (69a) should look like
+\begin{multline*}
+\widehat{\sigma_c}^2 = \argmax_{\sigma_c^2} \sum_{t=1}^T \sum_{i,j=1}^N J^{(i,j)}_{t,t-1}  \Bigg( -\frac{1}{2} \ln (2 \pi \sigma_c^2 \Delta) \\- \frac{1}{2} \frac{\big(\Ca_t^{(i)} - \mu_{t,t-1}^{(i,j)}\big)^2}{\sigma_c^2 \Delta}\Bigg)
+\end{multline*}
+\item Same with argmin, equation should look like
+\begin{multline*} 
+\{\widehat{\alpha}, \widehat{\beta}\} = \argmin_{\alpha, \beta \geq 0} \sum_{t=1}^T \sum_{i=1}^N  \frac{(F_t-\alpha S(\Ca_t) - \beta)^2}{\xi S(\Ca_t) + \sigma_F} \\ + \ln\big(\xi S(\Ca_t) + \sigma_F\big),
+\end{multline*}
+\item Another problem with argmin, equation should look like
+\begin{align*}
+\{\widehat{\xi},\widehat{\sigma_F}\} = \argmin_{\xi, \sigma_F \geq 0} (r_t-\xi S(\Ca_t) - \sigma_F)^2,
+\end{align*}
 \end{enumerate}
+
+
+\newpage \clearpage
+\section{response to inquiries}
+
+\ena
+\item ok.
+\item ok.
+\item ok.
+\item See \cite{YusteKonnerth06}
+\item See \cite{TayYue07}
+\item See \cite{YasudaSvoboda04}
+\item See \cite{BorstAbarbanel07}
+\item See \cite{SasakiIkegaya08}
+\item See \cite{DoucetGordon01}
+\item See \cite{DempsterRubin77}
+\item See \cite{SamejimaKimura04}
+\item This is correct.  NIPS is a conference proceedings.
+\item Please replace with \cite{HuysPaninski09}
+\item Maybe also look for Transactions of the ASME, as in \cite{Kalman60}
+\item Please replace with \cite{HuysPaninski09}
+\item Journal title is ``Network: Computation in Neural Systems'', as suggested by \cite{Paninski04}
+\item See \cite{VogelsteinPaninski09a}  
+\item See \cite{PillowSimoncelli08}
+\item See \cite{ShumwayStoffer06}
+\item Replace ``To sample conditioned on the next observation'' with ``To sample $\{n_t, \Ca_t\}$ conditioned on the next observation''
+\enb
+
+
+\clearpage \newpage
+\bibliography{/Users/joshyv/Research/misc/biblist}
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{apalike}
+%\bibliographystyle{biophysj}
+
 
 \end{document}

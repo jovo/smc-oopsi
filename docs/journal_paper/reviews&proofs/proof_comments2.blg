@@ -1,0 +1,45 @@
+This is BibTeX, Version 0.99c (Web2C 7.5.4)
+The top-level auxiliary file: proof_comments2.aux
+The style file: apalike.bst
+Database file #1: /Users/joshyv/Research/misc/biblist.bib
+You've used 14 entries,
+            1935 wiz_defined-function locations,
+            580 strings with 6721 characters,
+and the built_in function-call counts, 5609 in all, are:
+= -- 525
+> -- 286
+< -- 5
++ -- 98
+- -- 98
+* -- 514
+:= -- 1012
+add.period$ -- 41
+call.type$ -- 14
+change.case$ -- 116
+chr.to.int$ -- 14
+cite$ -- 14
+duplicate$ -- 193
+empty$ -- 362
+format.name$ -- 120
+if$ -- 1060
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 15
+newline$ -- 72
+num.names$ -- 42
+pop$ -- 97
+preamble$ -- 1
+purify$ -- 118
+quote$ -- 0
+skip$ -- 146
+stack$ -- 0
+substring$ -- 328
+swap$ -- 15
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 80
+warning$ -- 0
+while$ -- 41
+width$ -- 0
+write$ -- 181
