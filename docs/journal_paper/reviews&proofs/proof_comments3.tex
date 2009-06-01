@@ -1,0 +1,68 @@
+\input{/Users/joshyv/Research/misc/latex_paper} 
+\title{Proof Corrections}
+\author{Joshua Vogelstein}
+%\renewcommand{\theenumi}{\Alph{\enumi}}
+%\renewcommand{\labelenumi}{(\alph{\theenumi})}
+\newcommand{\wCab}{[\widehat{\text{Ca}}^{2+}]_b}
+
+\begin{document}
+\maketitle
+
+Please have the typesetter call me upon getting this version, and I will speak with this person over the phone, to make sure this version is finally correct.  
+
+
+\section{Main article errors}
+
+\begin{enumerate}
+\item Replace ``$P_{\bth (\bH_t | \bO_{1:t})}$'' with ``$\p(\bH_t | \bO_{1:t})$''
+\end{enumerate}
+
+\section{Appendix errors}
+
+\begin{enumerate}
+
+\item 
+\begin{multline*} \label{eq:q_n_lin}
+\mathcal{G}_{\thetn}^L\big(n_t^{(i)} | F_t\big)  \stackrel{def}{=}
+\int \p \big( \Ca_t^{(i)} \mid \Ca^{(i)}_{t-1}, n_t^{(i)} \big) \\
+ \p(F_t \mid \Ca_t^{(i)}) d\Ca_t^{(i)} =   \\ 
+ \frac{1}{Z} \frac{1}{\sqrt{2 \pi (\sigma_F^2 + \sigma_c^2 \Delta)}} \exp \left\{-\frac{1}{2}\frac{\big(F_t - C_t^{(i)} \big)^2}{\sigma_F^2 + \sigma_c^2 \Delta}\right\}, 
+\end{multline*}
+\item Replace ``$\{\Ca_{t-1}\}^{(i)}$'' with ``$\Ca_{t-1}^{(i)}$''
+\item If this fits on a single line (in a single column), great.  if not, please break at ``$=$''
+\begin{equation*}
+\p(\Ca_v \mid \Ca_{v-1}, n_v) = \mathcal{N}(\Ca_v; C_{v}, \sigma_c^2 \Delta),
+\end{equation*}
+\item Append after Eq. 2 and before the period: ``, where $C_v$ is defined as in Eq. 24''
+\item Replace ``${n_t}^{(i)}$'' with ``$n_t^{(i)}$
+\item argmax formatting should look like the first equation below, not the second.  
+\begin{align*}
+\hx = \argmax_{x} x<y
+\end{align*}
+\begin{align*}
+\hx = \overset{\argmax}{x} x<y
+\end{align*}
+\item 
+\begin{multline*} \label{eq:c_trans}
+\{\widehat{\tau}, \widehat{A}, \wCab\} = -\frac{1}{2}  \argmax_{\tau, A, \Ca_b > 0} \\
+\sum_{t=1}^T \sum_{i,j=1}^N  J^{(i,j)}_{t,t-1} \left(\Ca_t^{(i)} - \mu_{t,t-1}^{(i,j)} \right)^2,
+\end{multline*}
+\end{enumerate}
+
+
+\newpage \clearpage
+\section{response to inquiries}
+
+\ena
+\item Publisher: Cold Spring Harbor Laboratory Press.  Location: Cold Spring Harbor, New York
+\enb
+
+
+\clearpage \newpage
+\bibliography{/Users/joshyv/Research/misc/biblist}
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{apalike}
+%\bibliographystyle{biophysj}
+
+
+\end{document}
