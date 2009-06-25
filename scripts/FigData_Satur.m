@@ -12,7 +12,7 @@ clear, clc, fprintf('\nSaturation Fig\n')
 %% 1) get data
 
 % load '/Users/joshyv/Research/data/rafa_data/last_2_weeks/080218a/D080218a.mat';
-load '/Users/joshyv/Research/data/rafa/brendon/last_2_weeks/080218a/D080218a.mat';
+load '../data/D080218a.mat';
 j=24;                                               % experiment number
 
 % arrange stuff for plotting purposes
@@ -78,7 +78,7 @@ Sim.freq = 1;
 for m=Algs
     Sim.Alg = m;
     if m==6, Sim.Alg=7; Sim.pf=0; end
-    I{m}    = DataComp14(D{j}.F(1:Sim.T),P,Sim);
+    I{m}    = DataComp13(D{j}.F(1:Sim.T),P,Sim);
 end
 % save SaturData
 

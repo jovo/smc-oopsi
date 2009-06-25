@@ -1,10 +1,13 @@
-This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press).  The repository is organized as follows.  There are three main folders, code, data,  and docs.  
+This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press).  The repository is organized as follows:
 
-1) code contains all the scripts one needs to run our algorithm (as well as our license agreement).
-2) data contains the data used to make each of the figures in from the paper.
-3) docs contains all the files used to make the paper, including code for running the simulations in the paper.
+-- text: contains tex and compiled other files of submitted manuscript (and some minor revisions) 
+-- functions: contains functions required to use our smc algorithm to infer spikes (and a subfolder called for_figs containing older versions used in creating some of the figures)
+-- scripts: each script calls various functions, saves the data (simulated or analyzed), and generates figures
+-- data: raw and simulated data used to make figures
+-- figs: pdf files for each final figure
+-- general_background: a document containing some general background information that might be useful
+-- reviews&proofs: reviews and proofs from BJ to get this paper published
 
 Please respect our policy of openness, and operate accordingly.
-
 
 Contact Joshua Vogelstein (joshuav@jhu.edu) with questions/comments.

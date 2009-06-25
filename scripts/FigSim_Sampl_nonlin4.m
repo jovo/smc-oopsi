@@ -283,7 +283,7 @@ annotation('textbox','String',{'One observation ahead sampler'},...
 fig=figure(2);
 wh=[7 7];
 set(fig,'PaperPosition',[0 11-wh(2) wh]);
-print('-depsc','~\Research\papers\BJ08\SimSampl')
+print('-depsc','SimSampl')
 save('SimSampl')
 
 %% make a b&w fig
@@ -501,7 +501,7 @@ annotation('textbox','String',{'One observation ahead sampler'},...
 fig=figure(3);
 wh=[7 7];
 set(fig,'PaperPosition',[0 11-wh(2) wh]);
-print('-depsc','~\Research\papers\BJ08\SimSampl_bw')
+print('-depsc','SimSampl_bw')
 
 %% make old b&w fig
 % 

@@ -11,7 +11,7 @@ clear, clc, close all, fprintf('\nStimulus Fig\n')
 
 %% 1) get data
 
-load '/Users/joshyv/Research/data/rafa/brendon/last_2_weeks/080218a/D080218a.mat';
+load '../data/D080218a.mat';
 j=24;                                               % experiment number
 
 D{j}.spt    = Get_spt(D{j}.V);                      % get spike times
