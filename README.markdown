@@ -1,4 +1,4 @@
-This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press).  The repository is organized as follows:
+This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press), and subsequent related advances.
 
 Repository Organization
 =======================
