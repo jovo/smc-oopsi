@@ -1,12 +1,6 @@
 /old/*
-%/data/*
-%/docs/*
-/docs/journal_paper/old/*
-/code/glm-neal/*
-/CodeToSend/*
 *.swp
 *.swo
-.gitignore
 .DS_Store
 *.m~
 
