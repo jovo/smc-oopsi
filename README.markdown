@@ -15,19 +15,20 @@ Quick Tips
 ==========
 
 * final version of proof may be found [here] [1] 
-* to learn how to use the algorithm, i suggest playing with scripts in the script folder
+* to learn how to use the algorithm, i suggest playing with scripts in the [script folder] [3]
 * any questions or issues, please use the [issues tab] [2]
 * any problems with that, or questions inappropriate for that forum, please contact me at: joshuav@jhu.edu
 * please respect our policy of openness, and operate accordingly.
 
 [1]: http://github.com/jovo/smc-oopsi/raw/master/reviews&proofs/proof_v6.pdf "here"
 [2]: http://github.com/jovo/smc-oopsi/issues "issues tab"
+[3]: http://github.com/jovo/smc-oopsi/tree/master/scripts "scripts folder"
 
 License
 =======
 
 License stuff (apparently, this is useful for some people):
-Copyright (c) <2008> <Joshua Vogelstein>
+Copyright (c) 2008 Joshua Vogelstein
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
