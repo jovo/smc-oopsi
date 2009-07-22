@@ -3,8 +3,7 @@ This is a repository containing the code to implement the algorithms employed in
 
 This work may be cited as:
 
-Spike Inference from Calcium Imaging Using Sequential Monte Carlo Methods. Vogelstein, Joshua T.; Watson, Brendon O.; Packer, Adam M.; Yuste, Rafael; Jedynak, Bruno; Paninski, Liam
-doi:10.1016/j.bpj.2008.08.005 (volume 97 issue 2 pp.636 - 655)
+Vogelstein, Joshua T.; Watson, Brendon O.; Packer, Adam M.; Yuste, Rafael; Jedynak, Bruno; Paninski, Liam. Spike Inference from Calcium Imaging Using Sequential Monte Carlo Methods. Biophysical Journal, Volume 97, Issue 2, pp.636 - 655, 2009.
 
 
 Repository Organization
@@ -31,7 +30,7 @@ Quick Tips
 [2]: http://github.com/jovo/smc-oopsi/issues "issues tab"
 [3]: http://github.com/jovo/smc-oopsi/tree/master/scripts "scripts folder"
 [4]: http://www.cell.com/biophysj/abstract/S0006-3495(09)00311-7 "Cell Press"
-[5]: http://github.com/jovo/smc-oopsi/raw/master/Vogelstein09.pdf "here"
+[5]: http://github.com/jovo/smc-oopsi/raw/master/Vogelstein2009.pdf "here"
 
 License
 =======
