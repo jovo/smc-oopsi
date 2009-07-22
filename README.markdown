@@ -1,4 +1,11 @@
-This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009 (in press), and subsequent related advances.
+This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009, and subsequent related advances.  Publication version of manuscript is now available from Cell Press: http://www.cell.com/biophysj/abstract/S0006-3495(09)00311-7
+
+This work may be cited as:
+
+Spike Inference from Calcium Imaging Using Sequential Monte Carlo Methods
+Vogelstein, Joshua T.; Watson, Brendon O.; Packer, Adam M.; Yuste, Rafael; Jedynak, Bruno; Paninski, Liam
+doi:10.1016/j.bpj.2008.08.005 (volume 97 issue 2 pp.636 - 655)
+
 
 Repository Organization
 =======================
