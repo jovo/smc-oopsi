@@ -3,6 +3,7 @@ function Enew = GOOPSI_Mstep_v1_0(Sim,S,M,E,F)
 %
 % Input---
 % Sim:  simulation parameters
+% R:    real data
 % S:    simulation results
 % M:    moments and sufficient stats
 % E:    old parameter estimates
@@ -33,7 +34,9 @@ if Sim.n_params == true
       end
     end
 
-    [bko lik_r] = fminunc(@f_bko,RateParams,optionsGLM);% find MLE
+    %[bko lik_r] = fminunc(@f_bko,RateParams,optionsGLM);% find MLE
+    Z=ones(size(RateParams));
+    [bko lik_r]=fmincon(@f_bko,RateParams,[],[],[],[],-5*Z,10*Z,[],optionsGLM);%fix for h-problem
     Enew.k      = bko(1:end-Sim.M);                     % set new parameter estimes
     if Sim.M>0 Enew.omega = bko(end-Sim.M+1:end); end   % for omega too
   else
