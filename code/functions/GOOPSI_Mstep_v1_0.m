@@ -99,7 +99,12 @@ end
     Enew.C_0    = ve_x(3)/ve_x(1);
     fval        = M.K/2 + fval;                         % variance
     Enew.sigma_c= sqrt(fval/(M.J*Sim.dt));              % factor in dt
-    Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(Sim.dt)) - M.J*log(Enew.sigma_c);      
+    Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(Sim.dt)) - M.J*log(Enew.sigma_c); 
+    
+    if(isfield(Sim,'holdTau') && Sim.holdTau == 1)
+      Enew.tau_c  = E.tau;                              %KEEP tau AT INITIAL
+    end
+    
     lik = [lik Enew.lik_c];
   end
   

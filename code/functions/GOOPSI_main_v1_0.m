@@ -114,7 +114,10 @@ while Sim.conv==false;
     cnt=cnt+1;
     continue;
   elseif(cnt>=10)
-    error('There are no spikes in the data. Wrong initialization? [Fatal]');
+    M_best=M;
+    E_best=P;
+    fprintf('Warning: there are no spikes in the data. Wrong initialization?');
+    return;
   end
 
   %% compute moments and percentiles
