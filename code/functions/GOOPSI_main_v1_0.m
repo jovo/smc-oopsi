@@ -20,9 +20,9 @@ Sim.conv    = false;        % EM has NOT yet converged.
 Nparticles  = Sim.N;        % store initial Sim parameters
 
 if isfield(Sim,'FastInit')  % if Sim.FastInit=1, then we initialize the parameters using the fast-oopsi code
-    if Sim.FastInit==1, FastInit=1; else FastInit=0; end
+    if Sim.FastInit==0; FastInit=0; else FastInit=1; end
 else
-    FastInit=0;
+    FastInit=1;
 end
 
 if Sim.Mstep==1 && (~isfield(Sim,'SuppressGraphics') || Sim.SuppressGraphics == 0)
