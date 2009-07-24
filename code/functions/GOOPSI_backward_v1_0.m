@@ -1,12 +1,12 @@
 function Z = GOOPSI_backward_v1_0(Sim,S,P,Z,t)
-% this function iterates backward one step computing P[H_t | H_{t+1},O_{0:T}] 
+% this function iterates backward one step computing P[H_t | H_{t+1},O_{0:T}]
 % Input---
 % Sim:  simulation metadata
 % S:    particle positions and weights
 % P:    parameters
 % Z:    a bunch of stuff initialized for speed
 % t:    current time step
-% 
+%
 % Output is a single structure Z with the following fields
 % n1:   vector of spikes or no spike for each particle at time t
 % C0:   calcium positions at t-1
