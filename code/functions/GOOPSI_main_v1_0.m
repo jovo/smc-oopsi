@@ -50,17 +50,17 @@ while Sim.conv==false;
         if isfield(Sim,'TrueSpk')
             S.n     = Sim.TrueSpk;
             S.C     = filter(1,[1 P.a-1],S.n) + P.a*P.C_0;
-            if Sim.M>0
-               for m=1:Sim.M
-                   S.h(1,:,m) = filter(1,[1 P.g(m)-1],S.n);
-               end               
-            end
         else
            [S.n P2] = FOOPSI_v3_05_01(F',P,Sim);
            S.n      = S.n'/max(S.n);
            S.C      = filter(1,[1 -P2.gam],S.n);               % calcium concentration
            S.n(S.n>.2)=1;
            S.n(S.n<=.2)=0;
+        end
+        if Sim.M>0
+            for m=1:Sim.M
+                S.h(1,:,m) = filter(1,[1 P.g(m)-1],S.n);
+            end
         end
         Sim.N   = 1;
         S.w_f   = 1+0*S.n;

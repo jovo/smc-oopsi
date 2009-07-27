@@ -11,8 +11,8 @@ clear, clc, fprintf('\nDemo\n')
 
 %% 1) set simulation metadata
 
-Sim.T       = 230;                                  % # of time steps
-Sim.dt      = 1/100;                                % time step size
+Sim.T       = 600;                                  % # of time steps
+Sim.dt      = 1/60;                                % time step size
 Sim.freq    = 1;                                    % # of time steps between observations
 Sim.Nsec    = Sim.T*Sim.dt;                         % # of actual seconds
 Sim.T_o     = Sim.T;                                % # of observations
@@ -26,17 +26,17 @@ Sim.x       = 1*randn(1,Sim.T);                     % stimulus
 Sim.Mstep   = 1;                                    % do M-step
 Sim.C_params= 1;                                    % whether to estimate calcium parameters {tau,A,C_0,sig}
 Sim.n_params= 1;                                    % whether to estimate rate governing parameters {b,k}
-Sim.h_params= 0;                                    % whether to estimate spike history parameters {h}
+Sim.h_params= 1;                                    % whether to estimate spike history parameters {h}
 Sim.F_params= 1;                                    % whether to estimate observation parameters {alpha,beta,gamma,zeta}
 Sim.G_params= 1;                                    % whether to estimate observation parameters {alpha,beta,gamma,zeta}
-Sim.MaxIter = 10;                                   % max # of EM iterartions
+Sim.MaxIter = 3;                                    % max # of EM iterartions
 Sim.Scan    = 0;                                    % scans or epi data
 
 
 %% 2) initialize parameters
 
 % initialize barrier and wiener filter parameters
-P.rate  = 50/(Sim.T*Sim.dt);                        % expected spike rate
+P.rate  = 100/(Sim.T*Sim.dt);                        % expected spike rate
 P.A     = 1;                                        % jump size ($\mu$M)
 P.tau   = 0.5;                                      % calcium decay time constant (sec)
 P.lam   = Sim.T/(P.rate*P.A)*Sim.dt;                % expected jump size ber time bin
@@ -50,7 +50,7 @@ P.C_0       = 0;                                    % baseline [Ca++]
 P.C_init    = P.C_0;                                % initial [Ca++]
 P.sigma_c   = P.sig;
 P.n         = 1.0;                                  % hill equation exponent
-P.k_d       = 100;                                  % hill coefficient
+P.k_d       = 200;                                  % hill coefficient
 P.alpha     = 1;                                    % F_max
 P.beta      = 0;                                    % F_min
 P.gamma     = 1e-5;                                 % scaled variance
@@ -99,12 +99,11 @@ Sim.n = double(n); Sim.n(Sim.n==0)=NaN;             % for plotting purposes in P
 
 % Sim.TrueSpk = double(n);
 Sim.FastInit=1;
+Sim.holdTau=1;
 
 %% 4) infer spikes and estimate parameters
 
-P.A = 2*P.A;
 [I.M I.P]   = GOOPSI_main_v1_0(F,P,Sim);
-I.n         = I.M.nbar;
 save StimSim
 
 %% 5) plot results

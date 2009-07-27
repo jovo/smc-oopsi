@@ -17,6 +17,7 @@ lik = [];   % initialize likelihood
 optionsQP   = optimset('Display','off');
 optionsGLM  = optimset('Display','off','GradObj','off','TolFun',1e-6);
 
+%% MLE for spiking parameters
 if Sim.n_params == true
     % MLE for spike rate parameters: baseline (b), linear filter (k), and spike history weights (omega)
     fprintf('\nestimating spike rate params\n')
@@ -36,9 +37,9 @@ if Sim.n_params == true
 
         %[bko lik_r] = fminunc(@f_bko,RateParams,optionsGLM);% find MLE
         Z=ones(size(RateParams));
-        [bko lik_r]=fmincon(@f_bko,RateParams,[],[],[],[],-5*Z,10*Z,[],optionsGLM);%fix for h-problem
+        [bko lik_r]=fmincon(@f_bko,RateParams,[],[],[],[],-10*Z,10*Z,[],optionsGLM);%fix for h-problem
         Enew.k      = bko(1:end-Sim.M);                     % set new parameter estimes
-        if Sim.M>0 Enew.omega = bko(end-Sim.M+1:end); end   % for omega too
+        if Sim.M>0, Enew.omega = bko(end-Sim.M+1:end); end   % for omega too
     else
         if Sim.M>0                                          % if spike history terms are present
             for i=1:Sim.M                                   % and modify stimulus matrix for gradient
@@ -57,7 +58,7 @@ end
 
         xk      = RateParams(1:end-Sim.M)'*Sim.x;           % filtered stimulus
         hs      = zeroy;                                    % incorporate spike history terms
-        for l=1:Sim.M hs  = hs+RateParams(end-Sim.M+l)*S.h(:,:,l); end
+        for l=1:Sim.M, hs  = hs+RateParams(end-Sim.M+l)*S.h(:,:,l); end
         s       = repmat(xk,Sim.N,1) + hs;
 
         f_kdt   = exp(s)*Sim.dt;                            % shorthand
@@ -71,12 +72,11 @@ end
         end
     end %function f_bko
 
-
     function [lik dlik]= f_bk(RateParams)                   % get lik and grad
 
         xk      = RateParams'*Sim.x;                        % filtered stimulus
         hs      = zeroy;                                    % incorporate spike history terms
-        for l=1:Sim.M hs  = hs+E.omega*S.h(:,:,l); end
+        for l=1:Sim.M, hs  = hs+E.omega*S.h(:,:,l); end
         s       = repmat(xk,Sim.N,1) + hs;
 
         f_kdt   = exp(s)*Sim.dt;                            % shorthand
@@ -93,18 +93,20 @@ end
 %% MLE for calcium parameters
 if Sim.C_params == true
     fprintf('estimating calcium parammeters\n')
-    [ve_x fval] = quadprog(M.Q, M.L,[],[],[],[],[0 0 0],[inf inf inf],[1/E.tau_c E.A E.C_0/E.tau_c]+eps,optionsQP);
-    Enew.tau_c  = 1/ve_x(1);
-    Enew.A      = ve_x(2);
-    Enew.C_0    = ve_x(3)/ve_x(1);
+    if(isfield(Sim,'holdTau') && Sim.holdTau == 1)          % THIS IS NOT CORRECT AND SHOULD BE FIXED
+        [ve_x fval] = quadprog(M.Q(2:3,2:3), M.L(2:3),[],[],[],[],[0 0],[inf inf],[E.A E.C_0/E.tau_c]+eps,optionsQP);
+        Enew.tau_c  = E.tau_c;
+        Enew.A      = ve_x(1);
+        Enew.C_0    = ve_x(2)/E.tau_c;
+    else
+        [ve_x fval] = quadprog(M.Q, M.L,[],[],[],[],[0 0 0],[inf inf inf],[1/E.tau_c E.A E.C_0/E.tau_c]+eps,optionsQP);
+        Enew.tau_c  = 1/ve_x(1);
+        Enew.A      = ve_x(2);
+        Enew.C_0    = ve_x(3)/ve_x(1);
+    end
     fval        = M.K/2 + fval;                             % variance
     Enew.sigma_c= sqrt(fval/(M.J*Sim.dt));                  % factor in dt
     Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(Sim.dt)) - M.J*log(Enew.sigma_c);
-
-    if(isfield(Sim,'holdTau') && Sim.holdTau == 1)          % THIS IS NOT CORRECT AND SHOULD BE FIXED
-        Enew.tau_c  = E.tau;                                % KEEP tau AT INITIAL
-    end
-
     lik = [lik Enew.lik_c];
 end
 
@@ -120,8 +122,10 @@ if Sim.F_params == true
     [Enew.lik_o ab] = f1_ab(ab_0);
     Enew.alpha = ab(1);
     Enew.beta  = ab(2);
-    if(Sim.G_params == true) Enew.gamma = E.gamma*ab(3); end    % THIS IS NOT CORRECT AND SHOULD BE FIXED
-    if(Sim.G_params == true) Enew.zeta=E.zeta*ab(3); end        % THIS IS NOT CORRECT AND SHOULD BE FIXED
+    if Sim.G_params == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
+        Enew.zeta=E.zeta*ab(3);
+        Enew.gamma = E.gamma*ab(3); 
+    end    
     lik = [lik Enew.lik_o];
 end
 
