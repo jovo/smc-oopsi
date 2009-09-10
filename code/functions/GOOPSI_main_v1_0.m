@@ -16,7 +16,7 @@ k           = 0;            % best iteration so far
 P.lik       = -inf;         % we are trying to maximize the likelihood here
 maxlik      = P.lik;        % max lik achieved so far
 F           = max(F,eps);   % in case there are any zeros in the F time series
-Sim.conv    = false;        % EM has NOT yet converged.
+conv        = false;        % EM has NOT yet converged.
 Nparticles  = Sim.N;        % store initial Sim parameters
 
 if isfield(Sim,'FastInit')  % if Sim.FastInit=1, then we initialize the parameters using the fast-oopsi code
@@ -25,22 +25,15 @@ else
     FastInit=1;
 end
 
-if Sim.Mstep==1 && (~isfield(Sim,'SuppressGraphics') || Sim.SuppressGraphics == 0)
+if Sim.MaxIter>1 && (~isfield(Sim,'SuppressGraphics') || Sim.SuppressGraphics == 0)
     figure(1), clf, nrows=4;
 end % if estimating parameters, plot stuff for each iteration
 
 cnt=0;
-while Sim.conv==false;
+while conv==false;
     % some nomenclature to make code easier to read/write
     % these abbrev's are used in forward_step and backward_step
     i           = i+1;                         % index for the iteration of EM
-    P.a         = Sim.dt/P.tau_c;
-    P.sig2_c    = P.sigma_c^2*Sim.dt;
-    P.kx        = P.k'*Sim.x;
-    if Sim.M==1
-        P.sig2_h    = P.sigma_h.^2*Sim.dt;
-        P.g         = 1-Sim.dt/P.tau_h;
-    end
 
     %% forward step
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,15 +44,25 @@ while Sim.conv==false;
             S.n     = Sim.TrueSpk;
             S.C     = filter(1,[1 P.a-1],S.n) + P.a*P.C_0;
         else
-           [S.n P2] = FOOPSI_v3_05_01(F',P,Sim);
-           S.n      = S.n'/max(S.n);
-           S.C      = filter(1,[1 -P2.gam],S.n);               % calcium concentration
-           S.n(S.n>.2)=1;
-           S.n(S.n<=.2)=0;
+            Tim=Sim; Tim.MaxIter=2;
+            [S.n P2] = foopsi_v3_06(z1(F)',P,Tim);
+            S.n      = S.n'/max(S.n);
+            S.C      = filter(1,[1 -P2.gam],S.n*50);               % calcium concentration
+            S.n(S.n>.2)=1;
+            S.n(S.n<=.2)=0;
+
+            P.zeta  = P2.sig;
+            P.alpha = P2.a;
+            P.beta  = P2.b;
+            P.gamma = 0;
+            %             P.sigma_c =
+            P.sig2_c= P.sigma_c^2*Sim.dt;
         end
         if Sim.M>0
             for m=1:Sim.M
-                S.h(1,:,m) = filter(1,[1 P.g(m)-1],S.n);
+                P.sig2_h    = P.sigma_h.^2*Sim.dt;
+                P.g(m)      = 1-Sim.dt/P.tau_h(m);
+                S.h(1,:,m)  = filter(1,[1 P.g(m)-1],S.n);
             end
         end
         Sim.N   = 1;
@@ -69,6 +72,14 @@ while Sim.conv==false;
         M.n_sampl=S.n;
     else
         fprintf('\nforward step:        ')
+        P.a         = Sim.dt/P.tau_c;
+        P.sig2_c    = P.sigma_c^2*Sim.dt;
+        P.kx        = P.k'*Sim.x;
+        if Sim.M==1
+            P.sig2_h    = P.sigma_h.^2*Sim.dt;
+            P.g         = 1-Sim.dt/P.tau_h;
+        end
+
         Sim.N = Nparticles;
         S = GOOPSI_forward_v1_0(Sim,F,P);
     end;
@@ -83,9 +94,13 @@ while Sim.conv==false;
     Z.C0mat = Z.C0(:,Z.oney)';
 
     if Sim.C_params==false                          % if not maximizing the calcium parameters, then the backward step is simple
-        for t=Sim.T-Sim.freq-1:-1:Sim.freq+1        % actually recurse backwards for each time step
-            Z = GOOPSI_backward_v1_0(Sim,S,P,Z,t);
-            S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
+        if i==1 && FastInit==1,
+            S.w_b=S.w_f;
+        else
+            for t=Sim.T-Sim.freq-1:-1:Sim.freq+1        % actually recurse backwards for each time step
+                Z = GOOPSI_backward_v1_0(Sim,S,P,Z,t);
+                S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
+            end
         end
     else                                            % if maximizing calcium parameters,
         % need to compute some sufficient statistics
@@ -123,8 +138,7 @@ while Sim.conv==false;
             M.L(2)  = M.L(2) - sum(bPHH'*Z.n1);
             M.L(3)  = M.L(3) - Sim.dt*sum(bPHH(:));
 
-            M.J     = M.J + sum(Z.PHH(:));              % J-term in QP /sum J^(i,j)_{t,t-1}/
-
+            M.J     = M.J + 1;                          % J-term in QP /sum J^(i,j)_{t,t-1}/
             M.K     = M.K + sum(Z.PHH(:).*bmat(:).^2);  % K-term in QP /sum J^(i,j)_{t,t-1} (d^(i,j)_t)^2/
         end
         M.Q(2,1) = M.Q(1,2);                          % symmetrize Q
@@ -159,7 +173,7 @@ while Sim.conv==false;
 
     %% M step
 
-    if Sim.Mstep
+    if Sim.MaxIter>1
         Eold = P;                           % store most recent parameter structure
         P    = GOOPSI_Mstep_v1_0(Sim,S,M,P,F);% update parameters
         fprintf('\n\nIteration #%g, lik=%g, dlik=%g\n',i,P.lik,P.lik-Eold.lik)
@@ -174,7 +188,7 @@ while Sim.conv==false;
                 subplot(nrows,1,4), cla,hold on,% plot spike train estimate
                 if isfield(Sim,'n'), stem(Sim.n,'Marker','.',...
                         'MarkerSize',20,'LineWidth',2,'Color',[.75 .75 .75]); end
-                
+
                 M.nbar = sum(S.w_b.*S.n,1);
                 nvar = sum((repmat(M.nbar,Sim.N,1)-S.n).^2)/Sim.N;
                 BarVar=M.nbar+nvar; BarVar(BarVar>1)=1;
@@ -223,17 +237,17 @@ while Sim.conv==false;
         end
 
         if i>=Sim.MaxIter
-            Sim.conv=true;
+            conv=true;
         end
 
     else
         M_best  = M;                     % required for output of function
         E_best  = P;
-        Sim.conv= true;
+        conv= true;
     end
 
-    E_best  = P;                     % update best parameters
     M_best  = M;                     % update best moments
+    E_best  = P;                     % update best parameters
 
 end
 fprintf('\n')

@@ -124,16 +124,37 @@ if Sim.F_params == true
     Enew.beta  = ab(2);
     if Sim.G_params == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
         Enew.zeta=E.zeta*ab(3);
-        Enew.gamma = E.gamma*ab(3); 
+%         Enew.gamma = E.gamma*ab(3); 
     end    
     lik = [lik Enew.lik_o];
 end
 
+% if Sim.F_params == true
+%     fprintf('estimating observation parameters\n')
+%     ab_0            = [E.alpha E.beta];
+%     [Enew.lik_o ab] = f1_abgz(ab_0,1);
+%     Enew.alpha = ab(1);
+%     Enew.beta  = ab(2);
+%     lik = [lik Enew.lik_o];
+% end
+% 
+% if Sim.G_params == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
+%     fprintf('estimating noise parameters\n')
+%     ab_0            = [E.gamma E.zeta];
+%     [Enew.lik_n ab] = f1_abgz(ab_0,2);
+%     Enew.gamma = ab(1);
+%     Enew.zeta  = ab(2);
+%     lik = [lik Enew.lik_n];
+% end
+
     function [lik x] = f1_ab(ab_o)
-        %find MLE for {alpha, beta and gamma/zeta}
+        %find MLE for {alpha, beta} or  {gamma, zeta}
         %THIS EXPLICITLY ASSUMES WEIGHTS w_b ARE SUM=1 NORMALIZED (!)
         pfS=Hill_v1(E,S.C);
-        pfV=E.gamma*pfS+E.zeta;
+%         if ab==1,   
+            pfV=E.gamma*pfS+E.zeta;
+%         else        pfV=E.alpha*pfS+E.beta; end
+        
         % minimize quadratic form of E[(F - ab(1)*pfS - ab(2))^2/pfV]
         % taken as weighted average over all particles (Fmean)
         f1_abn=sum(sum(S.w_b,2));       % normalization

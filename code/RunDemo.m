@@ -11,50 +11,43 @@ clear, clc, fprintf('\nDemo\n')
 
 %% 1) set simulation metadata
 
-Sim.T       = 600;                                  % # of time steps
-Sim.dt      = 1/60;                                % time step size
+Sim.T       = 800;                                  % # of time steps
+Sim.dt      = 1/30;                                 % time step size
 Sim.freq    = 1;                                    % # of time steps between observations
-Sim.Nsec    = Sim.T*Sim.dt;                         % # of actual seconds
+% Sim.Nsec    = Sim.T*Sim.dt;                         % # of actual seconds
 Sim.T_o     = Sim.T;                                % # of observations
-Sim.tvec    = Sim.dt:Sim.dt:Sim.Nsec;               % vector of times
-Sim.N       = 100;                                  % # of particles
-Sim.M       = 1;                                    % number of spike history dimensions
+% Sim.tvec    = Sim.dt:Sim.dt:Sim.Nsec;               % vector of times
+Sim.N       = 20;                                   % # of particles
+Sim.M       = 0;                                    % number of spike history dimensions
 Sim.pf      = 1;                                    % use conditional sampler (not prior) when possible
-Sim.StimDim = 1;                                    % # of stimulus dimensions
-Sim.x       = 1*randn(1,Sim.T);                     % stimulus
+% Sim.StimDim = 1;                                    % # of stimulus dimensions
+Sim.x       = 1+0*randn(1,Sim.T);                   % stimulus
 
-Sim.Mstep   = 1;                                    % do M-step
-Sim.C_params= 1;                                    % whether to estimate calcium parameters {tau,A,C_0,sig}
+Sim.MaxIter = 5;                                    % max # of EM iterartions
+Sim.C_params= 0;                                    % whether to estimate calcium parameters {tau,A,C_0,sig}
 Sim.n_params= 1;                                    % whether to estimate rate governing parameters {b,k}
 Sim.h_params= 1;                                    % whether to estimate spike history parameters {h}
 Sim.F_params= 1;                                    % whether to estimate observation parameters {alpha,beta,gamma,zeta}
 Sim.G_params= 1;                                    % whether to estimate observation parameters {alpha,beta,gamma,zeta}
-Sim.MaxIter = 3;                                    % max # of EM iterartions
 Sim.Scan    = 0;                                    % scans or epi data
 
 
 %% 2) initialize parameters
 
-% initialize barrier and wiener filter parameters
-P.rate  = 100/(Sim.T*Sim.dt);                        % expected spike rate
-P.A     = 1;                                        % jump size ($\mu$M)
-P.tau   = 0.5;                                      % calcium decay time constant (sec)
-P.lam   = Sim.T/(P.rate*P.A)*Sim.dt;                % expected jump size ber time bin
-P.sig   = 1;                                        % standard deviation of noise (\mu M)
-
 % initialize particle filter parameters
-P.k         = log(-log(1-P.rate/Sim.T)/Sim.dt);     % linear filter
-P.tau_c     = P.tau;
-P.A         = 15;
+rate        = 1/Sim.dt/60;                          % spontaneous firing rate (assuming no spike history terms)
+P.k         = log(-log(1-rate*Sim.dt)/Sim.dt);      % linear filter
+P.tau_c     = 1;                                    % calciym decay time constant (sec)
+P.A         = 50;                                   % change ins [Ca++] after a spike (\mu M)
 P.C_0       = 0;                                    % baseline [Ca++]
 P.C_init    = P.C_0;                                % initial [Ca++]
-P.sigma_c   = P.sig;
+P.sigma_c   = 1;                                    % standard deviation of noise (\mu M)
 P.n         = 1.0;                                  % hill equation exponent
-P.k_d       = 200;                                  % hill coefficient
-P.alpha     = 1;                                    % F_max
-P.beta      = 0;                                    % F_min
-P.gamma     = 1e-5;                                 % scaled variance
-P.zeta      = 4*P.gamma;                            % constant variance
+P.k_d       = 1000;                                 % hill coefficient
+P.alpha     = 500;                                  % scale of F
+P.beta      = 200;                                  % offset of F
+P.gamma     = 0;                                    % scaled variance
+P.zeta      = P.alpha/5;                            % constant variance
 P.a         = Sim.dt/P.tau_c;
 
 if Sim.M==1                                         % if there are spike history terms
@@ -89,13 +82,18 @@ for t=2:Sim.T                                       %recursively update calcium
 end
 S=Hill_v1(P,C);
 F=(P.alpha*S+P.beta+sqrt(P.gamma*S+P.zeta).*randn(1,Sim.T))';
-F(F<=0)=eps;
-subplot(211), plot(F+1); hold on, stem(n),
-if Sim.M==1, plot(P.omega*h); end
-subplot(212),
-if Sim.M==1, plot(p), hold on, end
-plot(z1(Sim.x),'k');
+
 Sim.n = double(n); Sim.n(Sim.n==0)=NaN;             % for plotting purposes in ParticleFiltD
+Sim.C = C;
+
+figure(1), clf
+subplot(211)
+plot(F); 
+subplot(212)
+stem(Sim.n),
+if Sim.M>0, 
+    plot(P.omega*h);
+end
 
 % Sim.TrueSpk = double(n);
 Sim.FastInit=1;
@@ -103,14 +101,29 @@ Sim.holdTau=1;
 
 %% 4) infer spikes and estimate parameters
 
-[I.M I.P]   = GOOPSI_main_v1_0(F,P,Sim);
-save StimSim
+P0.tau      = P.tau_c;
+P0.b        = 0;
+
+P0.k        = P.k;
+P0.sigma_c  = P.sigma_c;                        
+P0.n        = P.n;                                 
+P0.k_d      = P.k_d;                               
+P0.A        = P.A;
+P0.C_0      = P.C_0;
+P0.tau_c    = P0.tau;
+P0.C_init   = P.C_init;
+
+Sim.a_est   = 1;
+Sim.b_est   = 1;
+
+[I.M I.P]   = GOOPSI_main_v1_0(F,P0,Sim);
 
 %% 5) plot results
 
-load('StimSim.mat')
 fig     = figure(2); clf,
-nrows   = 7;
+nrows=4;
+if Sim.M>0, nrows=nrows+1; end
+if var(Sim.x)~=0, nrows=nrows+2; end
 gray    = [.75 .75 .75];            % define gray color
 col   = [1 0 0; 0.2 0.2 1];         % define colors for mean
 ccol  = col+.4; ccol(ccol>1)=1;     % define colors for std
@@ -120,37 +133,43 @@ fs      = 12;                       % font size
 ms      = 20;                       % marker size for real spike
 sw      = 2;                        % spike width
 lw      = 2;                        % line width
-xticks  = 0:20:Sim.T;               % XTick positions
+xticks  = 0:round(Sim.T/5):Sim.T;               % XTick positions
 spt = find(Sim.n==1);               % find spike times
 tvec_o=xlims(1):Sim.freq:xlims(2);
 i=0;
 
 % plot stimulus
-i=i+1; subplot(nrows,1,i), hold on
-plot(Sim.x,'k','LineWidth',2);
-ylab=ylabel([{'External'}; {'Stimulus'}],'Interpreter',inter,'FontSize',fs);
-set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-set(gca,'YTick',[],'YTickLabel',[])
-set(gca,'XTick',xticks,'XTickLabel',[])
-axis([xlims min(Sim.x) max(Sim.x)])
+if var(Sim.x)~=0
+    i=i+1; subplot(nrows,1,i), hold on
+    plot(Sim.x,'k','LineWidth',2);
+    ylab=ylabel([{'External'}; {'Stimulus'}],'Interpreter',inter,'FontSize',fs);
+    set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
+    set(gca,'YTick',[],'YTickLabel',[])
+    set(gca,'XTick',xticks,'XTickLabel',[])
+    axis([xlims min(Sim.x*.9) max(Sim.x*1.1)])
+end
 
 % plot spike history
-i=i+1; subplot(nrows,1,i), hold on
-plot(P.omega*h,'k','LineWidth',2);
-ylab=ylabel([{'Simulated'}; {'Spike History'}],'Interpreter',inter,'FontSize',fs);
-set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-set(gca,'YTick',[],'YTickLabel',[])
-set(gca,'XTick',xticks,'XTickLabel',[])
-axis([xlims min(P.omega*h) 0.1])
+if Sim.M>0
+    i=i+1; subplot(nrows,1,i), hold on
+    plot(P.omega*h,'k','LineWidth',2);
+    ylab=ylabel([{'Simulated'}; {'Spike History'}],'Interpreter',inter,'FontSize',fs);
+    set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
+    set(gca,'YTick',[],'YTickLabel',[])
+    set(gca,'XTick',xticks,'XTickLabel',[])
+    axis([xlims min(P.omega*h) 0.1])
+end
 
 % plot prob spiking
-i=i+1; subplot(nrows,1,i), hold on
-plot(p,'k','LineWidth',2);
-ylab=ylabel([{'Probability'}; {'of Spiking'}],'Interpreter',inter,'FontSize',fs);
-set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-set(gca,'YTick',[],'YTickLabel',[])
-set(gca,'XTick',xticks,'XTickLabel',[])
-axis([xlims 0 1])
+if var(Sim.x)~=0
+    i=i+1; subplot(nrows,1,i), hold on
+    plot(p,'k','LineWidth',2);
+    ylab=ylabel([{'Probability'}; {'of Spiking'}],'Interpreter',inter,'FontSize',fs);
+    set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
+    set(gca,'YTick',[],'YTickLabel',[])
+    set(gca,'XTick',xticks,'XTickLabel',[])
+    axis([xlims 0 1])
+end
 
 % plot spike train
 i=i+1; subplot(nrows,1,i), hold on
@@ -196,8 +215,3 @@ box off
 % label last subplot
 set(gca,'XTick',xticks,'XTickLabel',(xticks-xlims(1))*Sim.dt)
 xlabel('Time (sec)','FontSize',fs)
-
-% print fig
-wh=[7 7];   %width and height
-set(fig,'PaperPosition',[0 11-wh(2) wh]);
-print('-depsc','StimSim')
