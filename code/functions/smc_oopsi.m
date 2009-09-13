@@ -24,6 +24,7 @@ if ~isfield(V,'N'),      V.N = 99; end                  % # particles
 if ~isfield(V,'M'),      V.M = 0; end                   % # of spike history terms
 if ~isfield(V,'pf'),     V.pf = 1; end                  % whether to use conditional sampler
 if ~isfield(V,'x'),      V.x = ones(1,V.T); end         % stimulus
+if ~isfield(V,'name'),   V.name='oopsi_output'; end     % name for output and figure
 if ~isfield(V,'dt'),                                    % frame duration
     fr = input('what was the frame rate for this movie (in Hz)? ');
     V.dt = 1/fr;
@@ -33,6 +34,7 @@ if ~isfield(V,'MaxIter'),                               % max # of iterations to
     if reply == 'y'; V.MaxIter = 10;
     else V.MaxIter = 0; end
 end
+
 
 % set which parameters to estimate
 if V.MaxIter>1;
@@ -73,8 +75,9 @@ end
 
 %% infer spikes and estimate parameters
 
-siz=size(F); if siz(1)>1, F=F'; else F=F; end
+siz=size(F); if siz(1)>1, F=F'; end
 [S P] = GOOPSI_main_v1_0(F,P0,V);
+save(name,'S','P','F','V');
 
 %% plot results
 
@@ -99,7 +102,7 @@ i=0;
 if isfield(V,'n'), spt = find(V.n==1); end               % find spike times
 
 % plot fluorescence data
-i=i+1; subplot(nrows,1,i), hold on
+i=i+1; h(i)=subplot(nrows,1,i); hold on
 plot(tvec_o,z1(F(tvec_o)),'.-k','LineWidth',2,'MarkerSize',ms*.75);
 % stem(V.n,'Marker','none','LineWidth',sw,'Color','k')
 ylab=ylabel([{'Fluorescence'}],'Interpreter',inter,'FontSize',fs);
@@ -110,7 +113,7 @@ axis([xlims 0 1.1])
 
 
 % plot fast-oopsi output 
-i=i+1; subplot(nrows,1,i), hold on,
+i=i+1; h(i)=subplot(nrows,1,i); hold on,
 n_fast=S.n_fast/max(S.n_fast);
 spts=find(n_fast>1e-3);
 stem(spts,n_fast(spts),'Marker','none','LineWidth',sw,'Color',col(2,:))
@@ -126,7 +129,7 @@ set(gca,'XTick',xticks,'XTickLabel',[])
 box off
 
 % plot smc-oopsi output 
-i=i+1; subplot(nrows,1,i), hold on,
+i=i+1; h(i)=subplot(nrows,1,i); hold on,
 spts=find(S.nbar>1e-3);
 stem(spts,S.nbar(spts),'Marker','none','LineWidth',sw,'Color',col(2,:))
 if isfield(V,'n'), 
@@ -143,10 +146,10 @@ box off
 % label last subplot
 set(gca,'XTick',xticks,'XTickLabel',round(xticks*V.dt*100)/100)
 xlabel('Time (sec)','FontSize',fs)
+linkaxes(h,'x')
 
 % print fig
 wh=[7 3];   %width and height
 set(gcf,'PaperSize',wh,'PaperPosition',[0 0 wh],'Color','w');
-if isfield(V,'name'), FigName=V.name; else FigName = 'fast_and_particle'; end
-print('-depsc',FigName)
-print('-dpdf',FigName)
+print('-depsc',V.name)
+print('-dpdf',V.name)
