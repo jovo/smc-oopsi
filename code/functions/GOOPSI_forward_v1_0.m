@@ -106,7 +106,7 @@ for t=Sim.freq+1:Sim.T-Sim.freq
     end
 
     if(Sim.M>0)                               % update S.h & S.p
-        for m=1:Sim.M S.h(:,t,m)=S.h_new(:,1,m); end
+        for m=1:Sim.M, S.h(:,t,m)=S.h_new(:,1,m); end
         S.p(:,t)=S.p_new;
     end
 
@@ -259,7 +259,7 @@ O.p=O.p+eps; % such that there are no actual zeros
 end %function UpdateMoments
 
 %% particle filtering using the prior sampler
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function S = prior_sampler(Sim,F,P,S,A,t)
 
 if Sim.M>0                                  % update noise on h
@@ -298,7 +298,7 @@ end
 end
 
 %% particle filtering using the CONDITIONAL sampler
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function S = cond_sampler(Sim,F,P,S,O,A,t,s)
 
 % if spike histories, sample h and update p
@@ -360,9 +360,9 @@ if mod(t,Sim.freq)==0                       % if not intermittent
     m       = repmat(O.mu(1,t-s),Sim.N,1);  % get mean
 else                                        % if intermittent, sample from mixture
     % first sample component
-    if(isempty(find(sp))) sp_i=[];          % handler for empty spike trains
+    if(isempty(find(sp))), sp_i=[];          % handler for empty spike trains
     else [fo,sp_i]   = histc(A.C_sampl(sp,t),[0  cumsum(O.p(1:k-1,t-s))'/sum(O.p(1:k-1,t-s))]); end
-    if(isempty(find(nosp))) nosp_i=[];      % handle for saturated spike trains
+    if(isempty(find(nosp))), nosp_i=[];      % handle for saturated spike trains
     else [fo,nosp_i] = histc(A.C_sampl(nosp,t),[0  cumsum(O.p(1:k,t-s))'/sum(O.p(1:k,t-s))]); end
 
     v       = O.sig2(1:k,t-s);              % get var of each component
@@ -407,7 +407,7 @@ w               = exp(sum_logs-max(sum_logs));      % exponentiate log(weights)
 S.next_w_f      = w./sum(w);                        % normalize such that they sum to unity
 
 if any(isnan(w)), Fs=1024; ts=0:1/Fs:1; sound(sin(2*pi*ts*200)), 
-    warning('some weights are NaN') 
+    warning('smc:weights','some weights are NaN') 
     keyboard, 
 end
 end %condtional sampler

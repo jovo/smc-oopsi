@@ -15,7 +15,7 @@ i           = 0;            % iteration number of EM
 k           = 0;            % best iteration so far
 P.lik       = -inf;         % we are trying to maximize the likelihood here
 maxlik      = P.lik;        % max lik achieved so far
-F           = max(F,eps);   % in case there are any zeros in the F time series
+% F           = max(F,eps);   % in case there are any zeros in the F time series
 conv        = false;        % EM has NOT yet converged.
 Nparticles  = Sim.N;        % store initial Sim parameters
 
@@ -26,7 +26,8 @@ else
 end
 
 if Sim.MaxIter>1 && (~isfield(Sim,'SuppressGraphics') || Sim.SuppressGraphics == 0)
-    figure(1), clf, nrows=4;
+    figNum=10;
+    figure(figNum), clf, nrows=4;
 end % if estimating parameters, plot stuff for each iteration
 
 cnt=0;
@@ -44,19 +45,35 @@ while conv==false;
             S.n     = Sim.TrueSpk;
             S.C     = filter(1,[1 P.a-1],S.n) + P.a*P.C_0;
         else
-            Tim=Sim; Tim.MaxIter=2;
-            [S.n P2] = foopsi_v3_06(z1(F)',P,Tim);
-            S.n      = S.n'/max(S.n);
-            S.C      = filter(1,[1 -P2.gam],S.n*50);               % calcium concentration
-            S.n(S.n>.2)=1;
-            S.n(S.n<=.2)=0;
-
-            P.zeta  = P2.sig;
-            P.alpha = P2.a;
-            P.beta  = P2.b;
-            P.gamma = 0;
-            %             P.sigma_c =
+            Tim     = Sim; Tim.MaxIter=2;
+            P1.b    = min(F);
+            [S.n P2]= fast_oopsi(F,Tim);
+            S.nnorm = S.n/max(S.n);
+            S.C     = filter(1,[1 -P2.gam],S.nnorm'*P.A);               % calcium concentration
+            C1      = [Hill_v1(P,S.C); ones(1,Sim.T)];
+            ab      = C1'\F';
+            P.alpha = ab(1);
+            P.beta  = ab(2);
+            P.zeta  = sqrt(sum((F-ab'*C1).^2)/Tim.T);
             P.sig2_c= P.sigma_c^2*Sim.dt;
+%             resid   = [F-ab'*C1; ones(1,Sim.T)];
+%             gz      = resid'\F';
+%             P.gamma = gz(1);
+%             P.zeta  = gz(2);
+%             P.gamma = 0;
+
+            M.n_fast= S.n;
+            thresh  = quantile(S.nnorm,.98);
+            S.n(S.nnorm>thresh)=1;
+            S.n(S.nnorm<=thresh)=0;
+            S.n = S.n';
+            
+%             P.zeta  = P2.sig;
+%             P.alpha = P2.a;
+%             P.beta  = P2.b;
+%             P.gamma = 0;
+%             %             P.sigma_c =
+%             P.sig2_c= P.sigma_c^2*Sim.dt;
         end
         if Sim.M>0
             for m=1:Sim.M
@@ -185,6 +202,7 @@ while conv==false;
             maxlik  = P.lik;                % update best likelihood
             k       = i;                    % save iteration number of best one
             if(~isfield(Sim,'SuppressGraphics') || ~Sim.SuppressGraphics)
+                figure(figNum)
                 subplot(nrows,1,4), cla,hold on,% plot spike train estimate
                 if isfield(Sim,'n'), stem(Sim.n,'Marker','.',...
                         'MarkerSize',20,'LineWidth',2,'Color',[.75 .75 .75]); end
