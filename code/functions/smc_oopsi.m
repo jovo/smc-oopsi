@@ -1,10 +1,14 @@
 function [S P] = smc_oopsi(F,V,P0)
-% this function prepares things for running our smc-oopsi code
+% this function prepares things for running our smc-oopsi code. simply
+% provide F, a vector of fluorescence observations (unfiltered), and the
+% code will output a best guess of the spike train.  parameters are
+% initialized (by default) using the fast_oopsi code, so that function must
+% be in the path as well.  
 % 
 % input
 %   F: 1D fluorescence trace from a single neuron
-%   V: structure of variables necessary to define for code to function properly
-%   P0: model parameters
+%   V: structure of variables necessary to define for code to function properly (optional)
+%   P0: model parameters (optional)
 % 
 % output
 %   S: smc particle weights and positions
@@ -67,8 +71,6 @@ if V.M==1                                                           % if there a
     if ~isfield(P0,'sigma_h'), P0.sigma_h = 0; end                  % stan dev of noise
 end
 
-
-
 %% infer spikes and estimate parameters
 
 siz=size(F); if siz(1)>1, F=F'; else F=F; end
@@ -86,10 +88,12 @@ ccol  = col+.4; ccol(ccol>1)=1;     % define colors for std
 inter   = 'tex';                    % interpreter for axis labels
 xlims   = [45 V.T-2*V.freq];    % xmin and xmax for current plot
 fs      = 12;                       % font size
-ms      = 20;                       % marker size for real spike
+ms      = 5;                       % marker size for real spike
 sw      = 2;                        % spike width
 lw      = 2;                        % line width
-xticks  = 0:round(V.T/5):V.T;               % XTick positions
+xticks  = 0:1/V.dt:V.T;               % XTick positions
+skip    = round(length(xticks)/5);
+xticks  = xticks(1:skip:end);
 tvec_o=xlims(1):V.freq:xlims(2);
 i=0;
 if isfield(V,'n'), spt = find(V.n==1); end               % find spike times
@@ -98,7 +102,7 @@ if isfield(V,'n'), spt = find(V.n==1); end               % find spike times
 i=i+1; subplot(nrows,1,i), hold on
 plot(tvec_o,z1(F(tvec_o)),'.-k','LineWidth',2,'MarkerSize',ms*.75);
 % stem(V.n,'Marker','none','LineWidth',sw,'Color','k')
-ylab=ylabel([{'in vitro'}; {'Fluorescence'}],'Interpreter',inter,'FontSize',fs);
+ylab=ylabel([{'Fluorescence'}],'Interpreter',inter,'FontSize',fs);
 set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
 set(gca,'YTick',[],'YTickLabel',[])
 set(gca,'XTick',xticks,'XTickLabel',[])
@@ -107,15 +111,15 @@ axis([xlims 0 1.1])
 
 % plot fast-oopsi output 
 i=i+1; subplot(nrows,1,i), hold on,
-if isfield(V,'n'), 
-    stem(spt,V.n(spt),'Marker','.','MarkerSize',ms,'LineWidth',sw,'Color','k','MarkerFaceColor','k','MarkerEdgeColor','k')
-end
 n_fast=S.n_fast/max(S.n_fast);
 spts=find(n_fast>1e-3);
 stem(spts,n_fast(spts),'Marker','none','LineWidth',sw,'Color',col(2,:))
+if isfield(V,'n'), 
+    stem(spt,V.n(spt),'Marker','v','MarkerSize',ms,'LineStyle','none','Color','k','MarkerFaceColor','k','MarkerEdgeColor','k')
+end
 axis([xlims 0 1])
 hold off,
-ylab=ylabel([{'fast'}; {'filter'}],'Interpreter',inter,'FontSize',fs);
+ylab=ylabel([{'Fast'}; {'Filter'}],'Interpreter',inter,'FontSize',fs);
 set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
 set(gca,'YTick',0:2,'YTickLabel',[])
 set(gca,'XTick',xticks,'XTickLabel',[])
@@ -123,76 +127,26 @@ box off
 
 % plot smc-oopsi output 
 i=i+1; subplot(nrows,1,i), hold on,
-if isfield(V,'n'), 
-    stem(spt,V.n(spt),'Marker','.','MarkerSize',ms,'LineWidth',sw,'Color','k','MarkerFaceColor','k','MarkerEdgeColor','k')
-end
 spts=find(S.nbar>1e-3);
 stem(spts,S.nbar(spts),'Marker','none','LineWidth',sw,'Color',col(2,:))
+if isfield(V,'n'), 
+    stem(spt,V.n(spt),'Marker','v','MarkerSize',ms,'LineStyle','none','Color','k','MarkerFaceColor','k','MarkerEdgeColor','k')
+end
 axis([xlims 0 1])
 hold off,
-ylab=ylabel([{'particle'}; {'filter'}],'Interpreter',inter,'FontSize',fs);
+ylab=ylabel([{'Particle'}; {'Filter'}],'Interpreter',inter,'FontSize',fs);
 set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
 set(gca,'YTick',0:2,'YTickLabel',[])
 set(gca,'XTick',xticks,'XTickLabel',[])
 box off
 
-
-% plot stimulus
-if var(V.x)~=0
-    i=i+1; subplot(nrows,1,i), hold on
-    plot(V.x,'k','LineWidth',2);
-    ylab=ylabel([{'External'}; {'Stimulus'}],'Interpreter',inter,'FontSize',fs);
-    set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-    set(gca,'YTick',[],'YTickLabel',[])
-    set(gca,'XTick',xticks,'XTickLabel',[])
-    axis([xlims min(V.x*.9) max(V.x*1.1)])
-end
-
-% plot spike history
-if V.M>0
-    i=i+1; subplot(nrows,1,i), hold on
-    plot(P0.omega*h,'k','LineWidth',2);
-    ylab=ylabel([{'Spike History'}],'Interpreter',inter,'FontSize',fs);
-    set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-    set(gca,'YTick',[],'YTickLabel',[])
-    set(gca,'XTick',xticks,'XTickLabel',[])
-    axis([xlims min(P0.omega*h) 0.1])
-end
-
-% plot prob spiking
-if var(V.x)~=0
-    i=i+1; subplot(nrows,1,i), hold on
-    plot(p,'k','LineWidth',2);
-    ylab=ylabel([{'Probability'}; {'of Spiking'}],'Interpreter',inter,'FontSize',fs);
-    set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-    set(gca,'YTick',[],'YTickLabel',[])
-    set(gca,'XTick',xticks,'XTickLabel',[])
-    axis([xlims 0 1])
-end
-
-% % plot spike train
-% if isfield(V,'n')
-%     i=i+1; subplot(nrows,1,i), hold on
-%     stem(spt,V.n(spt),'Marker','.','MarkerSize',ms,'LineWidth',sw,'Color','k','MarkerFaceColor','k','MarkerEdgeColor','k')
-%     ylab=ylabel([{'Spike Train'}],'Interpreter',inter,'FontSize',fs);
-%     set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-%     set(gca,'YTick',[],'YTickLabel',[])
-%     set(gca,'XTick',xticks,'XTickLabel',[])
-%     axis([xlims 0 1])
-% end
-
-% % plot calcium
-% i=i+1; subplot(nrows,1,i), hold on
-% C=sum(S.w.*S.C);
-% plot(C/P0.k_d,'k','LineWidth',2);
-% ylab=ylabel([{'Simulated'}; {'Calcium'}],'Interpreter',inter,'FontSize',fs);
-% set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-% set(gca,'YTick',[],'YTickLabel',[])
-% set(gca,'XTick',xticks,'XTickLabel',[])
-% axis([xlims 0 1.1*max(C/P0.k_d)])
-
-
-
 % label last subplot
-set(gca,'XTick',xticks,'XTickLabel',(xticks-xlims(1))*V.dt)
+set(gca,'XTick',xticks,'XTickLabel',round(xticks*V.dt*100)/100)
 xlabel('Time (sec)','FontSize',fs)
+
+% print fig
+wh=[7 3];   %width and height
+set(gcf,'PaperSize',wh,'PaperPosition',[0 0 wh],'Color','w');
+if isfield(V,'name'), FigName=V.name; else FigName = 'fast_and_particle'; end
+print('-depsc',FigName)
+print('-dpdf',FigName)
