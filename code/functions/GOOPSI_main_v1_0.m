@@ -54,26 +54,16 @@ while conv==false;
             ab      = C1'\F';
             P.alpha = ab(1);
             P.beta  = ab(2);
+            P.gamma = 0;
             P.zeta  = sqrt(sum((F-ab'*C1).^2)/Tim.T);
             P.sig2_c= P.sigma_c^2*Sim.dt;
-%             resid   = [F-ab'*C1; ones(1,Sim.T)];
-%             gz      = resid'\F';
-%             P.gamma = gz(1);
-%             P.zeta  = gz(2);
-%             P.gamma = 0;
 
             M.n_fast= S.n;
-            thresh  = quantile(S.nnorm,.98);
+            thresh  = quantile(S.nnorm,Sim.ptile);
             S.n(S.nnorm>thresh)=1;
             S.n(S.nnorm<=thresh)=0;
             S.n = S.n';
             
-%             P.zeta  = P2.sig;
-%             P.alpha = P2.a;
-%             P.beta  = P2.b;
-%             P.gamma = 0;
-%             %             P.sigma_c =
-%             P.sig2_c= P.sigma_c^2*Sim.dt;
         end
         if Sim.M>0
             for m=1:Sim.M

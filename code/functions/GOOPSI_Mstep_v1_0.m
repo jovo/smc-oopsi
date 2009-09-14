@@ -120,13 +120,22 @@ if Sim.F_params == true
     fprintf('estimating observation parammeters\n')
     ab_0            = [E.alpha E.beta];
     [Enew.lik_o ab] = f1_ab(ab_0);
+%     Enew.alpha = ab(1);
+%     Enew.beta  = ab(2);
+%     if Sim.G_params == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
+%         Enew.zeta=E.zeta*ab(3);
+% %         Enew.gamma = E.gamma*ab(3); 
+%     end
+%     lik = [lik Enew.lik_o];
+
+if Sim.N==1, C=S.C; else C=sum(S.w_b.*S.C); end
+    C1      = [Hill_v1(E,C); zeroy];
+    ab      = C1'\F';
     Enew.alpha = ab(1);
     Enew.beta  = ab(2);
-    if Sim.G_params == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
-        Enew.zeta=E.zeta*ab(3);
-%         Enew.gamma = E.gamma*ab(3); 
-    end    
-    lik = [lik Enew.lik_o];
+    Enew.zeta  = sqrt(sum((F-ab'*C1).^2)/Sim.T);
+
+
 end
 
 % if Sim.F_params == true

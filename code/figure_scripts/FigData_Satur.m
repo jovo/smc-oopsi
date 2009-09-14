@@ -12,7 +12,7 @@ clear, clc, fprintf('\nSaturation Fig\n')
 %% 1) get data
 
 % load '/Users/joshyv/Research/data/rafa_data/last_2_weeks/080218a/D080218a.mat';
-load '../data/D080218a.mat';
+load '../../data/D080218a.mat';
 j=24;                                               % experiment number
 
 % arrange stuff for plotting purposes

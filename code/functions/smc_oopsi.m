@@ -38,13 +38,14 @@ end
 
 % set which parameters to estimate
 if V.MaxIter>1;
-    if ~isfield(V,'C_params'), V.C_params   = 0; end    % calcium params
+    if ~isfield(V,'C_params'), V.C_params   = 1; end    % calcium params
     if ~isfield(V,'n_params'), V.n_params   = 1; end    % b,k
     if ~isfield(V,'h_params'), V.h_params   = 1; end    % w
-    if ~isfield(V,'F_params'), V.F_params   = 0; end    % alpha, beta
-    if ~isfield(V,'G_params'), V.G_params   = 0; end    % gamma, zeta
+    if ~isfield(V,'F_params'), V.F_params   = 1; end    % alpha, beta
+    if ~isfield(V,'G_params'), V.G_params   = 1; end    % gamma, zeta
     if ~isfield(V,'Scan'),     V.Scan       = 0; end    % epi or scan
     if ~isfield(V,'FastInit'), V.FastInit   = 1; end    % epi or scan
+    if V.FastInit == 1; if ~isfield(V,'ptile'), V.ptile = 0.95; end; end
 end
 
 % % V.TrueSpk = double(n);
@@ -77,14 +78,12 @@ end
 
 siz=size(F); if siz(1)>1, F=F'; end
 [S P] = GOOPSI_main_v1_0(F,P0,V);
-save(name,'S','P','F','V');
+save(V.name,'S','P','F','V');
 
 %% plot results
 
-fig     = figure(2); clf,
-nrows=3;
-if V.M>0, nrows=nrows+1; end
-if var(V.x)~=0, nrows=nrows+2; end
+fig     = figure(3); clf,
+if V.FastInit==0; nrows=2; else nrows=3; end
 gray    = [.75 .75 .75];            % define gray color
 col   = [1 0 0; 0.2 0.2 1];         % define colors for mean
 ccol  = col+.4; ccol(ccol>1)=1;     % define colors for std
@@ -113,20 +112,22 @@ axis([xlims 0 1.1])
 
 
 % plot fast-oopsi output 
-i=i+1; h(i)=subplot(nrows,1,i); hold on,
-n_fast=S.n_fast/max(S.n_fast);
-spts=find(n_fast>1e-3);
-stem(spts,n_fast(spts),'Marker','none','LineWidth',sw,'Color',col(2,:))
-if isfield(V,'n'), 
-    stem(spt,V.n(spt),'Marker','v','MarkerSize',ms,'LineStyle','none','Color','k','MarkerFaceColor','k','MarkerEdgeColor','k')
+if V.FastInit==1
+    i=i+1; h(i)=subplot(nrows,1,i); hold on,
+    n_fast=S.n_fast/max(S.n_fast);
+    spts=find(n_fast>1e-3);
+    stem(spts,n_fast(spts),'Marker','none','LineWidth',sw,'Color',col(2,:))
+    if isfield(V,'n'),
+        stem(spt,V.n(spt),'Marker','v','MarkerSize',ms,'LineStyle','none','Color','k','MarkerFaceColor','k','MarkerEdgeColor','k')
+    end
+    axis([xlims 0 1])
+    hold off,
+    ylab=ylabel([{'Fast'}; {'Filter'}],'Interpreter',inter,'FontSize',fs);
+    set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
+    set(gca,'YTick',0:2,'YTickLabel',[])
+    set(gca,'XTick',xticks,'XTickLabel',[])
+    box off
 end
-axis([xlims 0 1])
-hold off,
-ylab=ylabel([{'Fast'}; {'Filter'}],'Interpreter',inter,'FontSize',fs);
-set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
-set(gca,'YTick',0:2,'YTickLabel',[])
-set(gca,'XTick',xticks,'XTickLabel',[])
-box off
 
 % plot smc-oopsi output 
 i=i+1; h(i)=subplot(nrows,1,i); hold on,
