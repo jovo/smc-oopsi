@@ -1,4 +1,4 @@
-function Z = GOOPSI_backward_v1_0(Sim,S,P,Z,t)
+function Z = smc_oopsi_backward(Sim,S,P,Z,t)
 % this function iterates backward one step computing P[H_t | H_{t+1},O_{0:T}]
 % Input---
 % Sim:  simulation metadata

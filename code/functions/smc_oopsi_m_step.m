@@ -1,8 +1,8 @@
-function Enew = GOOPSI_Mstep_v1_0(Sim,S,M,E,F)
+function Enew = smc_oopsi_m_step(V,S,M,E,F)
 % this function finds the mle of the parameters
 %
 % Input---
-% Sim:  simulation parameters
+% V:  simulation parameters
 % R:    real data
 % S:    simulation results
 % M:    moments and sufficient stats
@@ -18,32 +18,32 @@ optionsQP   = optimset('Display','off');
 optionsGLM  = optimset('Display','off','GradObj','off','TolFun',1e-6);
 
 %% MLE for spiking parameters
-if Sim.n_params == true
+if V.est_n == true
     % MLE for spike rate parameters: baseline (b), linear filter (k), and spike history weights (omega)
     fprintf('\nestimating spike rate params\n')
     RateParams=E.k;                                         % vector of parameters to estimate (changes depending on user input of which parameters to estimate)
     sp      = S.n==1;                                       % find (particles,time step) pairs that spike
     nosp    = S.n==0;                                       % don't spike
-    x       = repmat(Sim.x,1,Sim.N);                        % generate matrix for gradinent
-    zeroy   = zeros(Sim.N,Sim.T);                           % make matrix of zeros for evaluating lik
+    x       = repmat(V.x,1,V.N);                        % generate matrix for gradinent
+    zeroy   = zeros(V.N,V.T);                           % make matrix of zeros for evaluating lik
 
-    if Sim.h_params == true
-        if Sim.M>0                                          % if spike history terms are present
+    if V.est_h == true
+        if V.M>0                                          % if spike history terms are present
             RateParams=[RateParams; E.omega];               % also estimate omega
-            for i=1:Sim.M                                   % and modify stimulus matrix for gradient
-                x(Sim.StimDim+i,:)=reshape(S.h(:,:,i),1,Sim.N*Sim.T);
+            for i=1:V.M                                   % and modify stimulus matrix for gradient
+                x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.N*V.T);
             end
         end
 
         %[bko lik_r] = fminunc(@f_bko,RateParams,optionsGLM);% find MLE
         Z=ones(size(RateParams));
         [bko lik_r]=fmincon(@f_bko,RateParams,[],[],[],[],-10*Z,10*Z,[],optionsGLM);%fix for h-problem
-        Enew.k      = bko(1:end-Sim.M);                     % set new parameter estimes
-        if Sim.M>0, Enew.omega = bko(end-Sim.M+1:end); end   % for omega too
+        Enew.k      = bko(1:end-V.M);                     % set new parameter estimes
+        if V.M>0, Enew.omega = bko(end-V.M+1:end); end   % for omega too
     else
-        if Sim.M>0                                          % if spike history terms are present
-            for i=1:Sim.M                                   % and modify stimulus matrix for gradient
-                x(Sim.StimDim+i,:)=reshape(S.h(:,:,i),1,Sim.N*Sim.T);
+        if V.M>0                                          % if spike history terms are present
+            for i=1:V.M                                   % and modify stimulus matrix for gradient
+                x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.N*V.T);
             end
         end
 
@@ -56,12 +56,12 @@ end
 
     function [lik dlik]= f_bko(RateParams)                  % get lik and grad
 
-        xk      = RateParams(1:end-Sim.M)'*Sim.x;           % filtered stimulus
+        xk      = RateParams(1:end-V.M)'*V.x;           % filtered stimulus
         hs      = zeroy;                                    % incorporate spike history terms
-        for l=1:Sim.M, hs  = hs+RateParams(end-Sim.M+l)*S.h(:,:,l); end
-        s       = repmat(xk,Sim.N,1) + hs;
+        for l=1:V.M, hs  = hs+RateParams(end-V.M+l)*S.h(:,:,l); end
+        s       = repmat(xk,V.N,1) + hs;
 
-        f_kdt   = exp(s)*Sim.dt;                            % shorthand
+        f_kdt   = exp(s)*V.dt;                            % shorthand
         ef      = exp(f_kdt);                               % shorthand
         lik     = -sum(S.w_b(sp).*log(1-1./ef(sp)))...      % liklihood
             +sum(S.w_b(nosp).*f_kdt(nosp));
@@ -74,12 +74,12 @@ end
 
     function [lik dlik]= f_bk(RateParams)                   % get lik and grad
 
-        xk      = RateParams'*Sim.x;                        % filtered stimulus
+        xk      = RateParams'*V.x;                        % filtered stimulus
         hs      = zeroy;                                    % incorporate spike history terms
-        for l=1:Sim.M, hs  = hs+E.omega*S.h(:,:,l); end
-        s       = repmat(xk,Sim.N,1) + hs;
+        for l=1:V.M, hs  = hs+E.omega*S.h(:,:,l); end
+        s       = repmat(xk,V.N,1) + hs;
 
-        f_kdt   = exp(s)*Sim.dt;                            % shorthand
+        f_kdt   = exp(s)*V.dt;                            % shorthand
         ef      = exp(f_kdt);                               % shorthand
         lik     = -sum(S.w_b(sp).*log(1-1./ef(sp)))...      % liklihood
             +sum(S.w_b(nosp).*f_kdt(nosp));
@@ -91,9 +91,9 @@ end
     end %function f_bko
 
 %% MLE for calcium parameters
-if Sim.C_params == true
+if V.est_c == true
     fprintf('estimating calcium parammeters\n')
-    if(isfield(Sim,'holdTau') && Sim.holdTau == 1)          % THIS IS NOT CORRECT AND SHOULD BE FIXED
+    if(isfield(V,'holdTau') && V.holdTau == 1)          % THIS IS NOT CORRECT AND SHOULD BE FIXED
         [ve_x fval] = quadprog(M.Q(2:3,2:3), M.L(2:3),[],[],[],[],[0 0],[inf inf],[E.A E.C_0/E.tau_c]+eps,optionsQP);
         Enew.tau_c  = E.tau_c;
         Enew.A      = ve_x(1);
@@ -105,65 +105,36 @@ if Sim.C_params == true
         Enew.C_0    = ve_x(3)/ve_x(1);
     end
     fval        = M.K/2 + fval;                             % variance
-    Enew.sigma_c= sqrt(fval/(M.J*Sim.dt));                  % factor in dt
-    Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(Sim.dt)) - M.J*log(Enew.sigma_c);
+    Enew.sigma_c= sqrt(fval/(M.J*V.dt));                  % factor in dt
+    Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(V.dt)) - M.J*log(Enew.sigma_c);
     lik = [lik Enew.lik_c];
 end
 
 % % %% MLE for spike history parameters
-% % for m=1:Sim.M
-% %     Enew.sigma_h(m)= sum(M.v{m})/Sim.T;
+% % for m=1:V.M
+% %     Enew.sigma_h(m)= sum(M.v{m})/V.T;
 % % end
 
 %% MLE for observation parameters
-if Sim.F_params == true
+
+if V.est_F == true
     fprintf('estimating observation parammeters\n')
     ab_0            = [E.alpha E.beta];
     [Enew.lik_o ab] = f1_ab(ab_0);
-%     Enew.alpha = ab(1);
-%     Enew.beta  = ab(2);
-%     if Sim.G_params == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
-%         Enew.zeta=E.zeta*ab(3);
-% %         Enew.gamma = E.gamma*ab(3); 
-%     end
-%     lik = [lik Enew.lik_o];
-
-if Sim.N==1, C=S.C; else C=sum(S.w_b.*S.C); end
-    C1      = [Hill_v1(E,C); zeroy];
-    ab      = C1'\F';
     Enew.alpha = ab(1);
     Enew.beta  = ab(2);
-    Enew.zeta  = sqrt(sum((F-ab'*C1).^2)/Sim.T);
-
-
+%     if V.est_G == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
+        Enew.zeta=E.zeta*ab(3);
+        Enew.gamma = E.gamma*ab(3);
+%     end
+    lik = [lik Enew.lik_o];
 end
 
-% if Sim.F_params == true
-%     fprintf('estimating observation parameters\n')
-%     ab_0            = [E.alpha E.beta];
-%     [Enew.lik_o ab] = f1_abgz(ab_0,1);
-%     Enew.alpha = ab(1);
-%     Enew.beta  = ab(2);
-%     lik = [lik Enew.lik_o];
-% end
-% 
-% if Sim.G_params == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
-%     fprintf('estimating noise parameters\n')
-%     ab_0            = [E.gamma E.zeta];
-%     [Enew.lik_n ab] = f1_abgz(ab_0,2);
-%     Enew.gamma = ab(1);
-%     Enew.zeta  = ab(2);
-%     lik = [lik Enew.lik_n];
-% end
-
     function [lik x] = f1_ab(ab_o)
-        %find MLE for {alpha, beta} or  {gamma, zeta}
+        %find MLE for {alpha, beta and gamma/zeta}
         %THIS EXPLICITLY ASSUMES WEIGHTS w_b ARE SUM=1 NORMALIZED (!)
         pfS=Hill_v1(E,S.C);
-%         if ab==1,   
-            pfV=E.gamma*pfS+E.zeta;
-%         else        pfV=E.alpha*pfS+E.beta; end
-        
+        pfV=E.gamma*pfS+E.zeta;
         % minimize quadratic form of E[(F - ab(1)*pfS - ab(2))^2/pfV]
         % taken as weighted average over all particles (Fmean)
         f1_abn=sum(sum(S.w_b,2));       % normalization
@@ -192,3 +163,4 @@ end
 
 Enew.lik=sum(lik);
 end
+

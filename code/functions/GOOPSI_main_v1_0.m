@@ -1,113 +1,150 @@
-function [M_best E_best] = GOOPSI_main_v1_0(F,P,Sim)
+function [M_best E_best V] = GOOPSI_main_v1_0(F,V,P)
 % this function runs the SMC-EM on a fluorescence time-series, and outputs the inferred
 % distributions and parameter estimates
 %
 % Inputs
 % F:    fluorescence time series
+% V:    structure of stuff necessary to run smc-em code
 % P:    structure of initial parameter estimates
-% Sim:  structure of stuff necessary to run smc-em code
 %
 % Outputs
 % M_best:   structure containing mean, variance, and percentiles of inferred distributions
 % E_best:   structure containing the final parameter estimates
 
+if nargin < 2,          V       = struct;       end
+if ~isfield(V,'T'),     V.T     = length(F);    end     % # of observations
+if ~isfield(V,'freq'),  V.freq  = 1;            end     % # time steps between observations
+if ~isfield(V,'T_o'),   V.T_o   = V.T;          end     % # of observations
+if ~isfield(V,'N'),     V.N     = 99;           end     % # particles
+if ~isfield(V,'M'),     V.M     = 0;            end     % # of spike history terms
+if ~isfield(V,'pf'),    V.pf    = 1;            end     % whether to use conditional sampler
+if ~isfield(V,'x'),     V.x     = ones(1,V.T);  end     % stimulus
+if ~isfield(V,'Scan'),  V.Scan  = 0;            end     % epi or scan
+if ~isfield(V,'name'),  V.name  ='oopsi';       end     % name for output and figure
+if ~isfield(V,'smc_iter_max'),                          % max # of iterations to estimate params
+    reply = input('do you want to estimate parameters? y/n [y] (case sensitive): ', 's');
+    if reply == 'y'; V.smc_iter_max = 2;
+    else V.smc_iter_max = 0; end
+end
+if isfield(V,'dt'),     dt = V.dt;              else
+    fr = input('what was the frame rate for this movie (in Hz)? ');
+    dt = 1/fr; V.dt = dt;
+end
+
+% set which parameters to estimate
+if ~isfield(V,'est_c'), V.est_c   = 1; end    % calcium params
+if ~isfield(V,'est_n'), V.est_n   = 1; end    % b,k
+if ~isfield(V,'est_h'), V.est_h   = 0; end    % w
+if ~isfield(V,'est_F'), V.est_F   = 1; end    % alpha, beta
+if ~isfield(V,'smc_plot'), V.smc_plot = 1; end
+% V.holdTau=1;
+if isfield(V,'fast_do')
+    fast=1;
+    if ~isfield(V,'ptile'), V.ptile=0.98; end
+else
+    fast = 0;
+end
+if isfield(V,'true_n'), true_n=1; else true_n=0; end
+if V.smc_iter_max>1 && V.smc_plot == 1                     % if estimating parameters, plot stuff for each iteration
+    figNum=10;
+    figure(figNum), clf, nrows=4;
+end 
+
+%% initialize model Parameters
+
+if nargin < 3,          P       = struct;       end
+if ~isfield(P,'tau_c'), P.tau_c = 1;            end     % calcium decay time constant (sec)
+if ~isfield(P,'A'),     P.A     = 50;           end     % change ins [Ca++] after a spike (\mu M)
+if ~isfield(P,'C_0'),   P.C_0   = 0;            end     % baseline [Ca++] (\mu M)
+if ~isfield(P,'C_init'),P.C_init= 0;            end     % initial [Ca++] (\mu M)
+if ~isfield(P,'sigma_c'),P.sigma_c= 0.1;        end     % standard deviation of noise (\mu M)
+if ~isfield(P,'n'),     P.n     = 1;            end     % hill equation exponent
+if ~isfield(P,'k_d'),   P.k_d   = 200;          end     % hill coefficient
+% if V.fast == 1 && V.fast_iters>1
+%     P.k = f(P.lam);
+%     P.alpha = P.a;
+%     P.beta  = P.b;
+%     P.gamma = 0;
+%     P.zeta  = P.sig;
+% else
+if ~isfield(P,'k'),     P.k     = log(-log(1-100/V.T)/V.dt); end  % linear filter
+if ~isfield(P,'alpha'), P.alpha = mean(F);      end     % scale of F
+if ~isfield(P,'beta'),  P.beta  = min(F);       end     % offset of F
+if ~isfield(P,'gamma'), P.gamma = 0;            end     % scaled variance
+if ~isfield(P,'zeta'),  P.zeta  = P.alpha/5;    end     % constant variance
+% end
+if V.M==1                                               % if there are spike history terms
+    if ~isfield(P,'omega'),   P.omega   = -1;   end     % weight
+    if ~isfield(P,'tau_h'),   P.tau_h   = 0.02; end     % time constant
+    if ~isfield(P,'sigma_h'), P.sigma_h = 0;    end     % stan dev of noise
+end
+
+%% initialize stuff
 i           = 0;            % iteration number of EM
 k           = 0;            % best iteration so far
 P.lik       = -inf;         % we are trying to maximize the likelihood here
 maxlik      = P.lik;        % max lik achieved so far
-% F           = max(F,eps);   % in case there are any zeros in the F time series
+F           = max(F,eps);   % in case there are any zeros in the F time series
 conv        = false;        % EM has NOT yet converged.
-Nparticles  = Sim.N;        % store initial Sim parameters
+Nparticles  = V.N;        % store initial V parameters
+cnt         = 0;
+starttime   = cputime;
 
-if isfield(Sim,'FastInit')  % if Sim.FastInit=1, then we initialize the parameters using the fast-oopsi code
-    if Sim.FastInit==0; FastInit=0; else FastInit=1; end
-else
-    FastInit=1;
-end
-
-if Sim.MaxIter>1 && (~isfield(Sim,'SuppressGraphics') || Sim.SuppressGraphics == 0)
-    figNum=10;
-    figure(figNum), clf, nrows=4;
-end % if estimating parameters, plot stuff for each iteration
-
-cnt=0;
 while conv==false;
     % some nomenclature to make code easier to read/write
     % these abbrev's are used in forward_step and backward_step
     i           = i+1;                         % index for the iteration of EM
+    P.a         = V.dt/P.tau_c;
+    P.sig2_c    = P.sigma_c^2*V.dt;
+    P.kx        = P.k'*V.x;
+    if V.M==1
+        P.sig2_h    = P.sigma_h.^2*V.dt;
+        P.g         = 1-V.dt/P.tau_h;
+    end
 
     %% forward step
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    fprintf('\nT = %g steps',Sim.T)
-    if isfield(Sim,'TrueSpk') || (FastInit==1 && i==1)                  % force true spikes hack
+    fprintf('\nT = %g steps',V.T)
+    if isfield(V,'true_n') || (fast==1 && i==1)                  % force true spikes hack
         fprintf('\nusing provided spike train, skipping forward step\n')
-        if isfield(Sim,'TrueSpk')
-            S.n     = Sim.TrueSpk;
+        if isfield(V,'true_n')
+            S.n     = V.true_n;
             S.C     = filter(1,[1 P.a-1],S.n) + P.a*P.C_0;
         else
-            Tim     = Sim; Tim.MaxIter=2;
-            P1.b    = min(F);
-            [S.n P2]= fast_oopsi(F,Tim);
-            S.nnorm = S.n/max(S.n);
-            S.C     = filter(1,[1 -P2.gam],S.nnorm'*P.A);               % calcium concentration
-            C1      = [Hill_v1(P,S.C); ones(1,Sim.T)];
-            ab      = C1'\F';
-            P.alpha = ab(1);
-            P.beta  = ab(2);
-            P.gamma = 0;
-            P.zeta  = sqrt(sum((F-ab'*C1).^2)/Tim.T);
-            P.sig2_c= P.sigma_c^2*Sim.dt;
-
-            M.n_fast= S.n;
-            thresh  = quantile(S.nnorm,Sim.ptile);
-            S.n(S.nnorm>thresh)=1;
-            S.n(S.nnorm<=thresh)=0;
-            S.n = S.n';
-            
+           [S.n P2] = FOOPSI_v3_06(F',P,V);
+           S.n      = S.n'/max(S.n);
+           S.C      = filter(1,[1 -P2.gam],S.n);               % calcium concentration
+           S.n(S.n>.2)=1;
+           S.n(S.n<=.2)=0;
         end
-        if Sim.M>0
-            for m=1:Sim.M
-                P.sig2_h    = P.sigma_h.^2*Sim.dt;
-                P.g(m)      = 1-Sim.dt/P.tau_h(m);
-                S.h(1,:,m)  = filter(1,[1 P.g(m)-1],S.n);
+        if V.M>0
+            for m=1:V.M
+                S.h(1,:,m) = filter(1,[1 P.g(m)-1],S.n);
             end
         end
-        Sim.N   = 1;
+        V.N     = 1;
         S.w_f   = 1+0*S.n;
         S.w_b   = S.w_f;
         S.p     = S.w_f;
         M.n_sampl=S.n;
     else
         fprintf('\nforward step:        ')
-        P.a         = Sim.dt/P.tau_c;
-        P.sig2_c    = P.sigma_c^2*Sim.dt;
-        P.kx        = P.k'*Sim.x;
-        if Sim.M==1
-            P.sig2_h    = P.sigma_h.^2*Sim.dt;
-            P.g         = 1-Sim.dt/P.tau_h;
-        end
-
-        Sim.N = Nparticles;
-        S = GOOPSI_forward_v1_0(Sim,F,P);
+        V.N = Nparticles;
+        S = smc_oopsi_forward(V,F,P);
     end;
 
 
     %% backward step
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('\nbackward step:       ')
-    Z.oney  = ones(Sim.N,1);                    % initialize stuff for speed
-    Z.zeroy = zeros(Sim.N);
-    Z.C0    = S.C(:,Sim.T);
+    Z.oney  = ones(V.N,1);                    % initialize stuff for speed
+    Z.zeroy = zeros(V.N);
+    Z.C0    = S.C(:,V.T);
     Z.C0mat = Z.C0(:,Z.oney)';
 
-    if Sim.C_params==false                          % if not maximizing the calcium parameters, then the backward step is simple
-        if i==1 && FastInit==1,
-            S.w_b=S.w_f;
-        else
-            for t=Sim.T-Sim.freq-1:-1:Sim.freq+1        % actually recurse backwards for each time step
-                Z = GOOPSI_backward_v1_0(Sim,S,P,Z,t);
-                S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
-            end
+    if V.est_c==false                          % if not maximizing the calcium parameters, then the backward step is simple
+        for t=V.T-V.freq-1:-1:V.freq+1        % actually recurse backwards for each time step
+            Z = smc_oopsi_backward(V,S,P,Z,t);
+            S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
         end
     else                                            % if maximizing calcium parameters,
         % need to compute some sufficient statistics
@@ -115,8 +152,8 @@ while conv==false;
         M.L = zeros(3,1);                           % the linear term for the calcium par
         M.J = 0;                                    % remaining terms for calcium par
         M.K = 0;
-        for t=Sim.T-Sim.freq-1:-1:Sim.freq+1
-            if isfield(Sim,'TrueSpk') || (FastInit==1 && i==1)                  % force true spikes hack
+        for t=V.T-V.freq-1:-1:V.freq+1
+            if isfield(V,'true_n') || (fast==1 && i==1)                  % force true spikes hack
                 Z.C0    = S.C(t-1);
                 Z.C0mat = Z.C0;
                 Z.C1    = S.C(t);
@@ -125,27 +162,27 @@ while conv==false;
                 Z.w_b   = 1;
                 Z.n1 = S.n(t);
             else
-                Z = GOOPSI_backward_v1_0(Sim,S,P,Z,t);
+                Z = smc_oopsi_backward(V,S,P,Z,t);
             end
             S.w_b(:,t-1) = Z.w_b;
 
             % below is code to quickly get sufficient statistics
-            C0dt    = Z.C0*Sim.dt;
+            C0dt    = Z.C0*V.dt;
             bmat    = Z.C1mat-Z.C0mat';
             bPHH    = Z.PHH.*bmat;
 
             M.Q(1,1)= M.Q(1,1) + sum(Z.PHH*(C0dt.^2));  % Q-term in QP
             M.Q(1,2)= M.Q(1,2) - Z.n1'*Z.PHH*C0dt;
-            M.Q(1,3)= M.Q(1,3) + sum(sum(-Z.PHH.*Z.C0mat'*Sim.dt^2));
+            M.Q(1,3)= M.Q(1,3) + sum(sum(-Z.PHH.*Z.C0mat'*V.dt^2));
             M.Q(2,2)= M.Q(2,2) + sum(Z.PHH'*(Z.n1.^2));
-            M.Q(2,3)= M.Q(2,3) + sum(sum(Z.PHH(:).*repmat(Z.n1,Sim.N,1))*Sim.dt);
-            M.Q(3,3)= M.Q(3,3) + sum(Z.PHH(:))*Sim.dt^2;
+            M.Q(2,3)= M.Q(2,3) + sum(sum(Z.PHH(:).*repmat(Z.n1,V.N,1))*V.dt);
+            M.Q(3,3)= M.Q(3,3) + sum(Z.PHH(:))*V.dt^2;
 
             M.L(1)  = M.L(1) + sum(bPHH*C0dt);          % L-term in QP
             M.L(2)  = M.L(2) - sum(bPHH'*Z.n1);
-            M.L(3)  = M.L(3) - Sim.dt*sum(bPHH(:));
+            M.L(3)  = M.L(3) - V.dt*sum(bPHH(:));
 
-            M.J     = M.J + 1;                          % J-term in QP /sum J^(i,j)_{t,t-1}/
+            M.J     = M.J + 1;              % J-term in QP /sum J^(i,j)_{t,t-1}/
             M.K     = M.K + sum(Z.PHH(:).*bmat(:).^2);  % K-term in QP /sum J^(i,j)_{t,t-1} (d^(i,j)_t)^2/
         end
         M.Q(2,1) = M.Q(1,2);                          % symmetrize Q
@@ -177,12 +214,12 @@ while conv==false;
         fprintf('Warning: there are no spikes in the data. Wrong initialization?');
         return;
     end
+    M.nbar = sum(S.w_b.*S.n,1);
 
     %% M step
-
-    if Sim.MaxIter>1
+    if V.smc_iter_max>1
         Eold = P;                           % store most recent parameter structure
-        P    = GOOPSI_Mstep_v1_0(Sim,S,M,P,F);% update parameters
+        P    = smc_oopsi_m_step(V,S,M,P,F);% update parameters
         fprintf('\n\nIteration #%g, lik=%g, dlik=%g\n',i,P.lik,P.lik-Eold.lik)
 
         % keep record of best stuff, or if told to ignore lik
@@ -191,23 +228,21 @@ while conv==false;
             M_best  = M;                    % update best moments
             maxlik  = P.lik;                % update best likelihood
             k       = i;                    % save iteration number of best one
-            if(~isfield(Sim,'SuppressGraphics') || ~Sim.SuppressGraphics)
+            if V.smc_plot
                 figure(figNum)
                 subplot(nrows,1,4), cla,hold on,% plot spike train estimate
-                if isfield(Sim,'n'), stem(Sim.n,'Marker','.',...
+                if isfield(V,'n'), stem(V.n,'Marker','.',...
                         'MarkerSize',20,'LineWidth',2,'Color',[.75 .75 .75]); end
-
-                M.nbar = sum(S.w_b.*S.n,1);
-                nvar = sum((repmat(M.nbar,Sim.N,1)-S.n).^2)/Sim.N;
+                nvar = sum((repmat(M.nbar,V.N,1)-S.n).^2)/V.N;
                 BarVar=M.nbar+nvar; BarVar(BarVar>1)=1;
                 stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 .8 0]);
                 stem(M.nbar,'Marker','none','LineWidth',2,'Color',[0 .5 0])
-                axis([0 Sim.T 0 1]),
+                axis([0 V.T 0 1]),
             end
         end
 
         % when estimating calcium parameters, display param estimates and lik
-        if Sim.C_params==1
+        if V.est_c==1
             dtheta  = norm([P.tau_c; P.A; P.C_0]-...
                 [Eold.tau_c; Eold.A; Eold.C_0])/norm([Eold.tau_c; Eold.A; Eold.C_0; P.sigma_c]);
             fprintf('\ndtheta = %.2f',dtheta);
@@ -221,8 +256,8 @@ while conv==false;
         end
 
         % plot lik and inferrence
-        if(~isfield(Sim,'SuppressGraphics') || ~Sim.SuppressGraphics)
-            if Sim.n_params == true
+        if V.smc_plot
+            if V.est_n == true
                 fprintf('\nk      = %.2f',P.k)
             end
             subplot(nrows,1,1), hold on, plot(i,P.lik,'o'), axis('tight')
@@ -230,13 +265,13 @@ while conv==false;
             Cbar = sum(S.w_b.*S.C,1);
             plot(P.alpha*Hill_v1(P,Cbar)+P.beta,'b'), hold off, axis('tight')
             subplot(nrows,1,3), cla, hold on,   % plot spike train estimate
-            axis([0 Sim.T 0 1]),
-            if isfield(Sim,'n'),
-                stem(Sim.n,'Marker','.','MarkerSize',20,'LineWidth',2,...
+            axis([0 V.T 0 1]),
+            if isfield(V,'n'),
+                stem(V.n,'Marker','.','MarkerSize',20,'LineWidth',2,...
                     'Color',[.75 .75 .75],'MarkerFaceColor','k','MarkerEdgeColor','k');
                 axis('tight'),
             end
-            Cvar = sum((repmat(Cbar,Sim.N,1)-S.C).^2)/Sim.N;
+            Cvar = sum((repmat(Cbar,V.N,1)-S.C).^2)/V.N;
             BarVar=M.nbar+nvar; BarVar(BarVar>1)=1;
             stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 .8 0]);
             stem(M.nbar,'Marker','none','LineWidth',2,'Color',[0 .5 0])
@@ -244,7 +279,7 @@ while conv==false;
             drawnow
         end
 
-        if i>=Sim.MaxIter
+        if i>=V.smc_iter_max
             conv=true;
         end
 
@@ -259,3 +294,4 @@ while conv==false;
 
 end
 fprintf('\n')
+V.smc_time=cputime-starttime;

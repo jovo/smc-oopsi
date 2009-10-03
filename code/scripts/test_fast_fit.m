@@ -1,6 +1,6 @@
 clear; clc
 
-Xim.dt = 1/15;
+Xim.dt = 1/30;
 Xim.T   = 500;
 Xim.MaxIter = 10;
 
@@ -8,19 +8,19 @@ PQ.gam  = (1-Xim.dt/1);
 H.n    = 1; 
 H.k_d  = 200;
 PQ.A    = 50;
-PQ.zeta = 0.04;
+PQ.zeta = 0.02;
 
 n = rand(1,Xim.T)>.98;
 C = filter(1,[1 -PQ.gam],n*PQ.A);               % calcium concentration
-F = Hill_v1(H,C)+PQ.zeta*randn(1,Xim.T);
+F = Hill_v1(H,C)+0.1+PQ.zeta*randn(1,Xim.T);
 % F = C+PQ.zeta*randn(1,Xim.T);
 figure(1), clf, 
 subplot(311), plot(F), axis('tight') 
 subplot(312), plot(C), axis('tight') 
 subplot(313), bar(n), axis('tight') 
 
+%%
 [S.n P2]= fast_oopsi(F,Xim,PQ);
-% %%
 S.nnorm = S.n/max(S.n);
 figure(1), subplot(313), hold all, stem(S.nnorm)
 S.C     = filter(1,[1 -PQ.gam],S.nnorm'*PQ.A);               % calcium concentration
