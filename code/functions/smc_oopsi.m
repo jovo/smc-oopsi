@@ -10,7 +10,7 @@ function [M_best E_best V] = smc_oopsi(F,V,P)
 % Outputs
 % M_best:   structure containing mean, variance, and percentiles of inferred distributions
 % E_best:   structure containing the final parameter estimates
-
+% V:        structure Variables for algorithm to run
 
 if nargin < 2,          V       = struct;       end
 if ~isfield(V,'T'),     V.T     = length(F);    end     % # of observations
@@ -24,32 +24,26 @@ if ~isfield(V,'Scan'),  V.Scan  = 0;            end     % epi or scan
 if ~isfield(V,'name'),  V.name  ='oopsi';       end     % name for output and figure
 if ~isfield(V,'smc_iter_max'),                          % max # of iterations to estimate params
     reply = input('do you want to estimate parameters? y/n [y] (case sensitive): ', 's');
-    if reply == 'y'; V.smc_iter_max = 10;
+    if reply == 'y'; V.smc_iter_max = 2;
     else V.smc_iter_max = 0; end
 end
-if isfield(V,'dt'),     dt = V.dt;              else
+if ~isfield(V,'dt'),
     fr = input('what was the frame rate for this movie (in Hz)? ');
-    dt = 1/fr; V.dt = dt;
+    V.dt = 1/fr;
 end
 
 % set which parameters to estimate
-if ~isfield(V,'est_c'), V.est_c   = 1; end    % calcium params
-if ~isfield(V,'est_n'), V.est_n   = 1; end    % b,k
-if ~isfield(V,'est_h'), V.est_h   = 0; end    % w
-if ~isfield(V,'est_F'), V.est_F   = 1; end    % alpha, beta
-if ~isfield(V,'smc_plot'), V.smc_plot = 1; end
-% V.holdTau=1;
-if isfield(V,'fast_do')
-    fast=1;
-    if ~isfield(V,'ptile'), V.ptile=0.98; end
-else
-    fast = 0;
-end
-if isfield(V,'true_n'), true_n=1; else true_n=0; end
-if V.smc_iter_max>1 && V.smc_plot == 1                     % if estimating parameters, plot stuff for each iteration
+if ~isfield(V,'est_c'),     V.est_c   = 1;      end     % calcium params
+if ~isfield(V,'est_n'),     V.est_n   = 1;      end     % b,k
+if ~isfield(V,'est_h'),     V.est_h   = 0;      end     % w
+if ~isfield(V,'est_F'),     V.est_F   = 1;      end     % alpha, beta
+if ~isfield(V,'smc_plot'),  V.smc_plot = 1;     end     % plot results with each iteration
+if ~isfield(V,'holdTau'),   V.holdTau=0;        end     % whether to hold tau_c fixed while estimating parameters (useful when data is poor)
+if isfield(V,'true_n'),     true_n=1;           else true_n=0;  end
+if V.smc_iter_max>1 && V.smc_plot == 1                  % if estimating parameters, plot stuff for each iteration
     figNum=10;
     figure(figNum), clf, nrows=4;
-end 
+end
 
 %% initialize model Parameters
 
@@ -61,57 +55,39 @@ if ~isfield(P,'C_init'),P.C_init= 0;            end     % initial [Ca++] (\mu M)
 if ~isfield(P,'sigma_c'),P.sigma_c= 0.1;        end     % standard deviation of noise (\mu M)
 if ~isfield(P,'n'),     P.n     = 1;            end     % hill equation exponent
 if ~isfield(P,'k_d'),   P.k_d   = 200;          end     % hill coefficient
-% if V.fast == 1 && V.fast_iters>1
-%     P.k = f(P.lam);
-%     P.alpha = P.a;
-%     P.beta  = P.b;
-%     P.gamma = 0;
-%     P.zeta  = P.sig;
-% else
 if ~isfield(P,'k'),     P.k     = log(-log(1-100/V.T)/V.dt); end  % linear filter
 if ~isfield(P,'alpha'), P.alpha = mean(F);      end     % scale of F
 if ~isfield(P,'beta'),  P.beta  = min(F);       end     % offset of F
 if ~isfield(P,'gamma'), P.gamma = 0;            end     % scaled variance
 if ~isfield(P,'zeta'),  P.zeta  = P.alpha/5;    end     % constant variance
-% end
 if V.M==1                                               % if there are spike history terms
     if ~isfield(P,'omega'),   P.omega   = -1;   end     % weight
     if ~isfield(P,'tau_h'),   P.tau_h   = 0.02; end     % time constant
     if ~isfield(P,'sigma_h'), P.sigma_h = 0;    end     % stan dev of noise
 end
 
-
 %% initialize stuff
 i           = 0;            % iteration number of EM
 k           = 0;            % best iteration so far
 P.lik       = -inf;         % we are trying to maximize the likelihood here
 maxlik      = P.lik;        % max lik achieved so far
-% F           = max(F,eps);   % in case there are any zeros in the F time series
+F           = max(F,eps);   % in case there are any zeros in the F time series
 conv        = false;        % EM has NOT yet converged.
 Nparticles  = V.N;          % store initial V parameters
-P.a         = V.dt/P.tau_c;
-P.sig2_c    = P.sigma_c^2*V.dt;
 cnt         = 0;
 starttime   = cputime;
 
 while conv==false;
-    i           = i+1;                         % index for the iteration of EM
-    V.smc_iter_tot = i;
+    i           = i+1;                                  % index for the iteration of EM
+    P.a         = V.dt/P.tau_c;                         % for brevity
+    V.smc_iter_tot = i;                                 % total number of iterations completed
+
     %% forward step
     fprintf('\nT = %g steps',V.T)
-    if true_n
+    if true_n                                           % this isn't exactly correct, should just use this for selecting spike train, and stil use smc to get calcium
+        fprintf('\nusing provided spike train, skipping forward step\n')
         S.n = V.true_n;
-%     elseif fast == 1 && i == 1
-%         M.fast_n= V.fast_n;
-%         S.nnorm = V.fast_n/max(V.fast_n);
-%         thresh  = quantile(S.nnorm,V.ptile);
-%         S.n(S.nnorm>thresh)=1;
-%         S.n(S.nnorm<=thresh)=0;
-% %         S.n = S.n';
-    end
-
-    if true_n %|| (fast && i==1)
-        S.C  = filter(1,[1 -(1-P.a)],S.n*P.A);               % calcium concentration
+        S.C  = filter(1,[1 -(1-P.a)],S.n*P.A);          % calcium concentration
         if V.M>0
             for m=1:V.M
                 P.sig2_h    = P.sigma_h.^2*V.dt;
@@ -126,7 +102,6 @@ while conv==false;
         M.n_sampl=S.n;
     else
         fprintf('\nforward step:        ')
-        P.a         = V.dt/P.tau_c;
         P.sig2_c    = P.sigma_c^2*V.dt;
         P.kx        = P.k'*V.x;
         if V.M==1
@@ -137,7 +112,6 @@ while conv==false;
         S   = smc_oopsi_forward(V,F,P);
     end;
 
-
     %% backward step
     fprintf('\nbackward step:       ')
     Z.oney  = ones(V.N,1);                    % initialize stuff for speed
@@ -146,14 +120,18 @@ while conv==false;
     Z.C0mat = Z.C0(:,Z.oney)';
 
     if V.est_c==false                          % if not maximizing the calcium parameters, then the backward step is simple
-        if (i==1 && fast==1) || true_n==1,
+        if true_n==1 % || (i==1 && V.fast_do==1)               % when spike train is provided, backwards is not necessary
             S.w_b=S.w_f;
         else
-            for t=V.T-V.freq-1:-1:V.freq+1        % actually recurse backwards for each time step
+            for t=V.T-V.freq-1:-1:V.freq+1              % actually recurse backwards for each time step
                 Z = smc_oopsi_backward(V,S,P,Z,t);
                 S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
             end
         end
+        %         for t=V.T-V.freq-1:-1:V.freq+1        % actually recurse backwards for each time step
+        %             Z = smc_oopsi_backward(V,S,P,Z,t);
+        %             S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
+        %         end
     else                                            % if maximizing calcium parameters,
         % need to compute some sufficient statistics
         M.Q = zeros(3);                             % the quadratic term for the calcium par
@@ -161,7 +139,7 @@ while conv==false;
         M.J = 0;                                    % remaining terms for calcium par
         M.K = 0;
         for t=V.T-V.freq-1:-1:V.freq+1
-            if isfield(V,'true_n') || (fast==1 && i==1)                  % force true spikes hack
+            if true_n %%isfield(V,'TrueSpk') || (FastInit==1 && i==1)                  % force true spikes hack
                 Z.C0    = S.C(t-1);
                 Z.C0mat = Z.C0;
                 Z.C1    = S.C(t);
@@ -190,21 +168,21 @@ while conv==false;
             M.L(2)  = M.L(2) - sum(bPHH'*Z.n1);
             M.L(3)  = M.L(3) - V.dt*sum(bPHH(:));
 
-            M.J     = M.J + 1;                          % J-term in QP /sum J^(i,j)_{t,t-1}/
+            M.J     = M.J + sum(Z.PHH(:));              % J-term in QP /sum J^(i,j)_{t,t-1}/
+
             M.K     = M.K + sum(Z.PHH(:).*bmat(:).^2);  % K-term in QP /sum J^(i,j)_{t,t-1} (d^(i,j)_t)^2/
         end
         M.Q(2,1) = M.Q(1,2);                          % symmetrize Q
         M.Q(3,1) = M.Q(1,3);
         M.Q(3,2) = M.Q(2,3);
     end
-
     fprintf('\n')
 
     % copy particle swarm for later
-    M.w=S.w_b;
-    M.n=S.n;
-    if(isfield(S,'h')) M.h=S.h; end
-    M.C=S.C;
+    M.w = S.w_b;
+    M.n = S.n;
+    M.C = S.C;
+    if isfield(S,'h'), M.h=S.h; end
 
     % check failure mode caused by too high P.A (low P.sigma_c)
     fact=1.55;
@@ -227,11 +205,11 @@ while conv==false;
     %% M step
     if V.smc_iter_max>1
         Eold = P;                           % store most recent parameter structure
-        P    = smc_oopsi_m_step(V,S,M,P,F);% update parameters
+        P    = smc_oopsi_m_step(V,S,M,P,F); % update parameters
         fprintf('\n\nIteration #%g, lik=%g, dlik=%g\n',i,P.lik,P.lik-Eold.lik)
 
         % keep record of best stuff, or if told to ignore lik
-        if((isfield(P,'ignorelik') && P.ignorelik==1) || P.lik>= maxlik)
+        if (isfield(P,'ignorelik') && P.ignorelik==1) || P.lik>= maxlik
             E_best  = P;                    % update best parameters
             M_best  = M;                    % update best moments
             maxlik  = P.lik;                % update best likelihood
@@ -297,9 +275,10 @@ while conv==false;
         conv= true;
     end
 
-    M_best  = M;                     % update best moments
-    E_best  = P;                     % update best parameters
+    %     M_best  = M;                     % update best moments
+    %     E_best  = P;                     % update best parameters
 
 end
 fprintf('\n')
 V.smc_time=cputime-starttime;
+V=orderfields(V);

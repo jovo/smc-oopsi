@@ -359,9 +359,9 @@ if mod(t,V.freq)==0                       % if not intermittent
     m       = repmat(O.mu(1,t-s),V.N,1);  % get mean
 else                                        % if intermittent, sample from mixture
     % first sample component
-    if(isempty(find(sp))), sp_i=[];          % handler for empty spike trains
+    if(isempty(find(sp,1))), sp_i=[];          % handler for empty spike trains
     else [fo,sp_i]   = histc(A.C_sampl(sp,t),[0  cumsum(O.p(1:k-1,t-s))'/sum(O.p(1:k-1,t-s))]); end
-    if(isempty(find(nosp))), nosp_i=[];      % handle for saturated spike trains
+    if(isempty(find(nosp,1))), nosp_i=[];      % handle for saturated spike trains
     else [fo,nosp_i] = histc(A.C_sampl(nosp,t),[0  cumsum(O.p(1:k,t-s))'/sum(O.p(1:k,t-s))]); end
 
     v       = O.sig2(1:k,t-s);              % get var of each component

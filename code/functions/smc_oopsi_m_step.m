@@ -93,7 +93,7 @@ end
 %% MLE for calcium parameters
 if V.est_c == true
     fprintf('estimating calcium parammeters\n')
-    if(isfield(V,'holdTau') && V.holdTau == 1)          % THIS IS NOT CORRECT AND SHOULD BE FIXED
+    if V.holdTau == 1
         [ve_x fval] = quadprog(M.Q(2:3,2:3), M.L(2:3),[],[],[],[],[0 0],[inf inf],[E.A E.C_0/E.tau_c]+eps,optionsQP);
         Enew.tau_c  = E.tau_c;
         Enew.A      = ve_x(1);
@@ -105,7 +105,7 @@ if V.est_c == true
         Enew.C_0    = ve_x(3)/ve_x(1);
     end
     fval        = M.K/2 + fval;                             % variance
-    Enew.sigma_c= sqrt(fval/(M.J*V.dt));                  % factor in dt
+    Enew.sigma_c= sqrt(fval/(M.J*V.dt));                    % factor in dt
     Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(V.dt)) - M.J*log(Enew.sigma_c);
     lik = [lik Enew.lik_c];
 end
@@ -123,10 +123,8 @@ if V.est_F == true
     [Enew.lik_o ab] = f1_ab(ab_0);
     Enew.alpha = ab(1);
     Enew.beta  = ab(2);
-%     if V.est_G == true                                 % THIS IS NOT CORRECT AND SHOULD BE FIXED
-        Enew.zeta=E.zeta*ab(3);
-        Enew.gamma = E.gamma*ab(3);
-%     end
+    Enew.zeta=E.zeta*ab(3);
+    Enew.gamma = E.gamma*ab(3);
     lik = [lik Enew.lik_o];
 end
 

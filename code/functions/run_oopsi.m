@@ -5,7 +5,11 @@ function varargout = run_oopsi(F,V,P)
 % 
 % to use the code, simply provide F, a vector of fluorescence observations,
 % for each cell.  the fast-oopsi code can handle a matrix input,
-% corresponding to a set of pixels, for each time bin.
+% corresponding to a set of pixels, for each time bin. smc-oopsi expects a
+% 1D fluorescence trace.
+% 
+% see documentation for fast-oopsi and smc-oopsi to determine how to set
+% variables 
 %
 % input
 %   F: fluorescence from a single neuron
@@ -13,13 +17,13 @@ function varargout = run_oopsi(F,V,P)
 %   P: Parameters of the model (optional)
 %
 % possible outputs
-%   fast:   fast-oopsi MAP estimate of spike train, argmax_{n\geq 0} P[n|F], (fast.n) and parameter estimate (fast.P)
-%   smc:    smc-oopsi estimate of {P[X_t|F]}_{t<T}, where X={n,C} or {n,C,h}, (smc.E) and parameter estimates (smc.P)
+%   fast:   fast-oopsi MAP estimate of spike train, argmax_{n\geq 0} P[n|F], (fast.n),  parameter estimate (fast.P), and structure of  variables for algorithm (fast.V)
+%   smc:    smc-oopsi estimate of {P[X_t|F]}_{t<T}, where X={n,C} or {n,C,h}, (smc.E), parameter estimates (smc.P), and structure of variables for algorithm (fast.V)
 
 %% set code Variables
 
 if nargin < 2,              V           = struct;   end         % create structure for algorithmic variables, if none provided
-if ~isfield(V,'fast_do'),   V.fast_do  = 1;         end         % whether to use fast filter, aka, fast_oopsi
+if ~isfield(V,'fast_do'),   V.fast_do  = 0;         end         % whether to use fast filter, aka, fast_oopsi
 if ~isfield(V,'smc_do'),    V.smc_do   = 1;         end         % whether to use particle filter, aka, smc_oopsi
 if ~isfield(V,'name'),                                          % give data a unique, time-stamped name, if there is not one specified
     cput    = clock;
@@ -32,21 +36,29 @@ save(V.name_dat,'V')
 
 %% infer spikes and estimate parameters
 
-if V.fast_do == 1                                          % infer spikes using fast-oopsi
+if V.fast_do == 1                                               % infer spikes using fast-oopsi
     [fast.n fast.P fast.V]= fast_oopsi(F,V,P);                                
     save(V.name_dat,'fast','-append')
 end
 
-if V.smc_do == 1                                           % infer spikes using smc-oopsi
+if V.smc_do == 1                                                % infer spikes using smc-oopsi
     siz=size(F); if siz(1)>1, F=F'; end
     if V.fast_do == 1; 
-        V.fast_n= fast.n;
-        P.alpha = fast.P.a;
-        P.beta  = fast.P.b;
-%         P.k     = f(P.lam);
-        P.gamma = 0;
-        P.zeta  = fast.P.sig;
-        P.tau_c = V.dt/(1-fast.P.gam);
+        if ~isfield(P,'A'),     P.A     = 50;   end             % initialize jump in [Ca++] after spike
+        if ~isfield(P,'n'),     P.n     = 1;    end             % Hill coefficient
+        if ~isfield(P,'k_d'),   P.k_d   = 200;  end             % dissociation constant
+        if ~isfield(V,'T'),     V.T     = fast.V.T; end         % number of time steps
+        if ~isfield(V,'dt'),    V.T     = fast.V.dt; end        % frame duration, aka, 1/(framte rate)        
+        P.tau_c = V.dt/(1-fast.P.gam);                          % time constant
+        nnorm   = fast.n/max(fast.n);                           % normalize inferred spike train
+        C       = filter(1,[1 -fast.P.gam],P.A*nnorm)';         % calcium concentration
+        C1      = [Hill_v1(P,C); ones(1,V.T)];                  % for brevity
+        ab      = C1'\F';                                       % estimate scalse and offset
+        P.alpha = ab(1);                                        % fluorescence scale
+        P.beta  = ab(2);                                        % fluorescence offset
+        P.zeta  = sqrt(sum((F-ab'*C1).^2)/V.T);                 % std for F
+        P.gamma = P.zeta/5;                                     % signal dependent noise
+        P.k     = log(-log(1-sum(nnorm)/V.T)/V.dt);             % baseline firing rate parameter
     end
     [smc.E smc.P smc.V] = smc_oopsi(F,V,P);
     save(V.name_dat,'smc','-append');
@@ -68,12 +80,13 @@ end
 %% plot results
 
 fig=figure(3); clf,
-V.T     = length(F);
-if V.fast_do==1, V.dt=fast.V.dt; else  V.dt=smc.V.dt; end
+V.T = length(F);
+if V.fast_do==1, 
+    V.dt=fast.V.dt;  V.name_fig=fast.V.name_fig; 
+else  V.dt=smc.V.dt; V.name_fig=smc.V.name_fig; 
+end
 if (V.fast_do==1 && V.smc_do==1), nrows=3; else nrows=2; end
 gray    = [.75 .75 .75];            % define gray color
-col   = [1 0 0; 0.2 0.2 1];         % define colors for mean
-ccol  = col+.4; ccol(ccol>1)=1;     % define colors for std
 inter   = 'tex';                    % interpreter for axis labels
 xlims   = [45 V.T-2];               % xmin and xmax for current plot
 fs      = 12;                       % font size
@@ -83,20 +96,17 @@ lw      = 2;                        % line width
 xticks  = 0:1/V.dt:V.T;             % XTick positions
 skip    = round(length(xticks)/5);
 xticks  = xticks(1:skip:end);
-tvec_o=xlims(1):xlims(2);
-i=0;
-if isfield(V,'true_n'), spt = find(V.true_n==1); end               % find spike times
+tvec_o  = xlims(1):xlims(2);        % only plot stuff within xlims
+if isfield(V,'plot_n'), spt=find(V.plot_n); end
 
 % plot fluorescence data
-i=i+1; h(i)=subplot(nrows,1,i); hold on
-plot(tvec_o,z1(F(tvec_o)),'.-k','LineWidth',2,'MarkerSize',ms*.75);
-% stem(V.n,'Marker','none','LineWidth',sw,'Color','k')
+i=1; h(i)=subplot(nrows,1,i); hold on
+plot(tvec_o,z1(F(tvec_o)),'-k','LineWidth',lw);
 ylab=ylabel([{'Fluorescence'}],'Interpreter',inter,'FontSize',fs);
 set(ylab,'Rotation',0,'HorizontalAlignment','right','verticalalignment','middle')
 set(gca,'YTick',[],'YTickLabel',[])
 set(gca,'XTick',xticks,'XTickLabel',[])
 axis([xlims 0 1.1])
-
 
 % plot fast-oopsi output
 if V.fast_do==1
@@ -104,8 +114,8 @@ if V.fast_do==1
     n_fast=fast.n/max(fast.n);
     spts=find(n_fast>1e-3);
     stem(spts,n_fast(spts),'Marker','none','LineWidth',sw,'Color','k')
-    if isfield(V,'true_n'),
-        stem(spt,V.true_n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','Color',gray,'MarkerFaceColor',gray,'MarkerEdgeColor',gray)
+    if isfield(V,'plot_n'),
+        stem(spt,V.plot_n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
     end
     axis([xlims 0 1.1])
     hold off,
@@ -121,8 +131,8 @@ if V.smc_do == 1
     i=i+1; h(i)=subplot(nrows,1,i); hold on,
     spts=find(smc.E.nbar>1e-3);
     stem(spts,smc.E.nbar(spts),'Marker','none','LineWidth',sw,'Color','k')
-    if isfield(V,'true_n'),
-        stem(spt,V.true_n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','Color',gray,'MarkerFaceColor',gray,'MarkerEdgeColor',gray)
+    if isfield(V,'plot_n'),
+        stem(spt,V.plot_n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
     end
     axis([xlims 0 1.1])
     hold off,
