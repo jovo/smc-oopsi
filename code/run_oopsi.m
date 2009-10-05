@@ -27,11 +27,12 @@ if ~isfield(V,'fast_do'),   V.fast_do  = 0;         end         % whether to use
 if ~isfield(V,'smc_do'),    V.smc_do   = 1;         end         % whether to use particle filter, aka, smc_oopsi
 if ~isfield(V,'name'),                                          % give data a unique, time-stamped name, if there is not one specified
     cput    = clock;
-    V.name  = ['oopsi_' num2str(cput(1)) '_' num2str(cput(2)) '_' num2str(cput(3)) '_' num2str(cput(4)) '_' num2str(cput(5))];
+    fname   = pwd;
+    V.name  = [fname 'oopsi_' num2str(cput(1)) '_' num2str(cput(2)) '_' num2str(cput(3)) '_' num2str(cput(4)) '_' num2str(cput(5))];
 end         
-V.name_dat = ['~/Research/oopsi/smc-oopsi/data/jovo/' V.name];  % filename for data
-V.name_fig = ['~/Research/oopsi/smc-oopsi/figs/jovo/' V.name];  % filename for figure
-if nargin < 3,              P           = struct;   end         % create structure for parameters, if none provided
+V.name_dat = V.name;                                            % filename for data
+V.name_fig = V.name;                                            % filename for figure
+if nargin < 3, P = struct; end                                  % create structure for parameters, if none provided
 save(V.name_dat,'V')
 
 %% infer spikes and estimate parameters
