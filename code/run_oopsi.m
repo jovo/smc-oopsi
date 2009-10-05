@@ -28,7 +28,7 @@ if ~isfield(V,'smc_do'),    V.smc_do   = 1;         end         % whether to use
 if ~isfield(V,'name'),                                          % give data a unique, time-stamped name, if there is not one specified
     cput    = clock;
     fname   = pwd;
-    V.name  = [fname 'oopsi_' num2str(cput(1)) '_' num2str(cput(2)) '_' num2str(cput(3)) '_' num2str(cput(4)) '_' num2str(cput(5))];
+    V.name  = [fname '/oopsi_' num2str(cput(1)) '_' num2str(cput(2)) '_' num2str(cput(3)) '_' num2str(cput(4)) '_' num2str(cput(5))];
 end         
 V.name_dat = V.name;                                            % filename for data
 V.name_fig = V.name;                                            % filename for figure
@@ -98,7 +98,7 @@ xticks  = 0:1/V.dt:V.T;             % XTick positions
 skip    = round(length(xticks)/5);
 xticks  = xticks(1:skip:end);
 tvec_o  = xlims(1):xlims(2);        % only plot stuff within xlims
-if isfield(V,'plot_n'), spt=find(V.plot_n); end
+if isfield(V,'n'), spt=find(V.n); end
 
 % plot fluorescence data
 i=1; h(i)=subplot(nrows,1,i); hold on
@@ -115,8 +115,8 @@ if V.fast_do==1
     n_fast=fast.n/max(fast.n);
     spts=find(n_fast>1e-3);
     stem(spts,n_fast(spts),'Marker','none','LineWidth',sw,'Color','k')
-    if isfield(V,'plot_n'),
-        stem(spt,V.plot_n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
+    if isfield(V,'n'),
+        stem(spt,V.n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
     end
     axis([xlims 0 1.1])
     hold off,
@@ -132,8 +132,8 @@ if V.smc_do == 1
     i=i+1; h(i)=subplot(nrows,1,i); hold on,
     spts=find(smc.E.nbar>1e-3);
     stem(spts,smc.E.nbar(spts),'Marker','none','LineWidth',sw,'Color','k')
-    if isfield(V,'plot_n'),
-        stem(spt,V.plot_n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
+    if isfield(V,'n'),
+        stem(spt,V.n(spt)+0.1,'Marker','v','MarkerSize',ms,'LineStyle','none','MarkerFaceColor',gray,'MarkerEdgeColor',gray)
     end
     axis([xlims 0 1.1])
     hold off,

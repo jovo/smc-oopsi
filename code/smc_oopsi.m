@@ -22,6 +22,7 @@ if ~isfield(V,'pf'),    V.pf    = 1;            end     % whether to use conditi
 if ~isfield(V,'x'),     V.x     = ones(1,V.T);  end     % stimulus
 if ~isfield(V,'Scan'),  V.Scan  = 0;            end     % epi or scan
 if ~isfield(V,'name'),  V.name  ='oopsi';       end     % name for output and figure
+if ~isfield(V,'ignorelike'),  V.ignorelik  = 1; end     % epi or scan
 if ~isfield(V,'smc_iter_max'),                          % max # of iterations to estimate params
     reply = input('do you want to estimate parameters? y/n [y] (case sensitive): ', 's');
     if reply == 'y'; V.smc_iter_max = 2;
@@ -68,7 +69,7 @@ end
 
 %% initialize stuff
 i           = 0;            % iteration number of EM
-k           = 0;            % best iteration so far
+i_best      = 0;            % best iteration so far
 P.lik       = -inf;         % we are trying to maximize the likelihood here
 maxlik      = P.lik;        % max lik achieved so far
 F           = max(F,eps);   % in case there are any zeros in the F time series
@@ -114,32 +115,28 @@ while conv==false;
 
     %% backward step
     fprintf('\nbackward step:       ')
-    Z.oney  = ones(V.N,1);                    % initialize stuff for speed
+    Z.oney  = ones(V.N,1);                          % initialize stuff for speed
     Z.zeroy = zeros(V.N);
     Z.C0    = S.C(:,V.T);
     Z.C0mat = Z.C0(:,Z.oney)';
 
-    if V.est_c==false                          % if not maximizing the calcium parameters, then the backward step is simple
-        if true_n==1 % || (i==1 && V.fast_do==1)               % when spike train is provided, backwards is not necessary
+    if V.est_c==false                               % if not maximizing the calcium parameters, then the backward step is simple
+        if true_n==1                                % when spike train is provided, backwards is not necessary
             S.w_b=S.w_f;
         else
-            for t=V.T-V.freq-1:-1:V.freq+1              % actually recurse backwards for each time step
+            for t=V.T-V.freq-1:-1:V.freq+1          % actually recurse backwards for each time step
                 Z = smc_oopsi_backward(V,S,P,Z,t);
-                S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
+                S.w_b(:,t-1) = Z.w_b;               % update forward-backward weights
             end
         end
-        %         for t=V.T-V.freq-1:-1:V.freq+1        % actually recurse backwards for each time step
-        %             Z = smc_oopsi_backward(V,S,P,Z,t);
-        %             S.w_b(:,t-1) = Z.w_b;                   % update forward-backward weights
-        %         end
     else                                            % if maximizing calcium parameters,
-        % need to compute some sufficient statistics
+                                                    % need to compute some sufficient statistics
         M.Q = zeros(3);                             % the quadratic term for the calcium par
         M.L = zeros(3,1);                           % the linear term for the calcium par
         M.J = 0;                                    % remaining terms for calcium par
         M.K = 0;
         for t=V.T-V.freq-1:-1:V.freq+1
-            if true_n %%isfield(V,'TrueSpk') || (FastInit==1 && i==1)                  % force true spikes hack
+            if true_n                               % force true spikes hack
                 Z.C0    = S.C(t-1);
                 Z.C0mat = Z.C0;
                 Z.C1    = S.C(t);
@@ -172,7 +169,7 @@ while conv==false;
 
             M.K     = M.K + sum(Z.PHH(:).*bmat(:).^2);  % K-term in QP /sum J^(i,j)_{t,t-1} (d^(i,j)_t)^2/
         end
-        M.Q(2,1) = M.Q(1,2);                          % symmetrize Q
+        M.Q(2,1) = M.Q(1,2);                            % symmetrize Q
         M.Q(3,1) = M.Q(1,3);
         M.Q(3,2) = M.Q(2,3);
     end
@@ -209,11 +206,11 @@ while conv==false;
         fprintf('\n\nIteration #%g, lik=%g, dlik=%g\n',i,P.lik,P.lik-Eold.lik)
 
         % keep record of best stuff, or if told to ignore lik
-        if (isfield(P,'ignorelik') && P.ignorelik==1) || P.lik>= maxlik
+        if V.ignorelik==1 || P.lik>= maxlik
             E_best  = P;                    % update best parameters
             M_best  = M;                    % update best moments
             maxlik  = P.lik;                % update best likelihood
-            k       = i;                    % save iteration number of best one
+            i_best  = i;                    % save iteration number of best one
             if V.smc_plot
                 figure(figNum)
                 subplot(nrows,1,4), cla,hold on,% plot spike train estimate
