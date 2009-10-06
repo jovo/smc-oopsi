@@ -22,16 +22,23 @@ function varargout = run_oopsi(F,V,P)
 
 %% set code Variables
 
-if nargin < 2,              V           = struct;   end         % create structure for algorithmic variables, if none provided
+if nargin < 2,              V          = struct;    end         % create structure for algorithmic variables, if none provided
 if ~isfield(V,'fast_do'),   V.fast_do  = 0;         end         % whether to use fast filter, aka, fast_oopsi
 if ~isfield(V,'smc_do'),    V.smc_do   = 1;         end         % whether to use particle filter, aka, smc_oopsi
 if ~isfield(V,'name'),                                          % give data a unique, time-stamped name, if there is not one specified
-    cput    = clock;
-    fname   = pwd;
-    V.name  = [fname '/oopsi_' num2str(cput(1)) '_' num2str(cput(2)) '_' num2str(cput(3)) '_' num2str(cput(4)) '_' num2str(cput(5))];
+    cput    = clock;                                            % get clock time for unique file name
+    lic     = str2num(license);                                 % jovo's license
+    if lic == 273165,                                           % if using jovo's computer, set data and fig folders
+        fdat = '~/Research/oopsi/meta-oopsi/data/jovo';
+        ffig = '~/Research/oopsi/meta-oopsi/figs/jovo';
+    else                                                        % else just use current dir
+        fdat = pwd;
+        ffig = pwd;
+    end
+    V.name  = ['/oopsi_' num2str(cput(1)) '_' num2str(cput(2)) '_' num2str(cput(3)) '_' num2str(cput(4)) '_' num2str(cput(5))];
 end         
-V.name_dat = V.name;                                            % filename for data
-V.name_fig = V.name;                                            % filename for figure
+V.name_dat = [fdat V.name];                                     % filename for data
+V.name_fig = [ffig V.name];                                     % filename for figure
 if nargin < 3, P = struct; end                                  % create structure for parameters, if none provided
 save(V.name_dat,'V')
 
