@@ -28,20 +28,20 @@ if ~isfield(V,'smc_do'),    V.smc_do    = 0;        end         % whether to use
 if ~isfield(V,'save'),      V.save      = 0;        end         % whether to save results and figs
 if ~isfield(V,'plot'),      V.plot      = 0;        end         % whether to plot the fluorescence and spike trains
 if V.save == 1
-    if ~isfield(V,'name'),                                          % give data a unique, time-stamped name, if there is not one specified
-        lic     = str2num(license);                                 % jovo's license
-        if lic == 273165,                                           % if using jovo's computer, set data and fig folders
+    if ~isfield(V,'name'),                                      % give data a unique, time-stamped name, if there is not one specified
+        lic     = str2num(license);                             % jovo's license #
+        if lic == 273165,                                       % if using jovo's computer, set data and fig folders
             fdat = '~/Research/oopsi/meta-oopsi/data/jovo';
             ffig = '~/Research/oopsi/meta-oopsi/figs/jovo';
-        else                                                        % else just use current dir
+        else                                                    % else just use current dir
             fdat = pwd;
             ffig = pwd;
         end
         V.name  = ['/oopsi_' datestr(clock,30)];
     end
-    V.name_dat = [fdat V.name];                                     % filename for data
-    V.name_fig = [ffig V.name];                                     % filename for figure
-    if nargin < 3, P = struct; end                                  % create structure for parameters, if none provided
+    V.name_dat = [fdat V.name];                                 % filename for data
+    V.name_fig = [ffig V.name];                                 % filename for figure
+    if nargin < 3, P = struct; end                              % create structure for parameters, if none provided
     save(V.name_dat,'V')
 end
 
@@ -83,7 +83,7 @@ if nargout == 1
     else
         varargout{1} = smc;
     end
-else
+elseif nargout == 2
     varargout{1} = fast;
     varargout{2} = smc;
 end
