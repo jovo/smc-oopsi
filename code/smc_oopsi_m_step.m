@@ -160,5 +160,6 @@ end
     end %function f_ab
 
 Enew.lik=sum(lik);
+
 end
 

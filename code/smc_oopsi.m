@@ -56,7 +56,10 @@ if ~isfield(P,'C_init'),P.C_init= 0;            end     % initial [Ca++] (\mu M)
 if ~isfield(P,'sigma_c'),P.sigma_c= 0.1;        end     % standard deviation of noise (\mu M)
 if ~isfield(P,'n'),     P.n     = 1;            end     % hill equation exponent
 if ~isfield(P,'k_d'),   P.k_d   = 200;          end     % hill coefficient
-if ~isfield(P,'k'),     P.k     = log(-log(1-100/V.T)/V.dt); end  % linear filter
+if ~isfield(P,'k'),                                     % linear filter
+    k   = str2double(input('approx. how many spikes underly this trace: ', 's'));
+    P.k = log(-log(1-k/V.T)/V.dt); 
+end  
 if ~isfield(P,'alpha'), P.alpha = mean(F);      end     % scale of F
 if ~isfield(P,'beta'),  P.beta  = min(F);       end     % offset of F
 if ~isfield(P,'gamma'), P.gamma = 0;            end     % scaled variance
@@ -67,7 +70,7 @@ if V.M==1                                               % if there are spike his
     if ~isfield(P,'sigma_h'), P.sigma_h = 0;    end     % stan dev of noise
 end
 
-%% initialize stuff
+%% initialize other stuff
 i           = 0;            % iteration number of EM
 i_best      = 0;            % best iteration so far
 P.lik       = -inf;         % we are trying to maximize the likelihood here
@@ -84,34 +87,7 @@ while conv==false;
     V.smc_iter_tot = i;                                 % total number of iterations completed
 
     %% forward step
-    fprintf('\nT = %g steps',V.T)
-    if true_n                                           % this isn't exactly correct, should just use this for selecting spike train, and stil use smc to get calcium
-        fprintf('\nusing provided spike train, skipping forward step\n')
-        S.n = V.true_n;
-        S.C  = filter(1,[1 -(1-P.a)],S.n*P.A);          % calcium concentration
-        if V.M>0
-            for m=1:V.M
-                P.sig2_h    = P.sigma_h.^2*V.dt;
-                P.g(m)      = 1-V.dt/P.tau_h(m);
-                S.h(1,:,m)  = filter(1,[1 P.g(m)-1],S.n);
-            end
-        end
-        V.N     = 1;
-        S.w_f   = 1+0*S.n;
-        S.w_b   = S.w_f;
-        S.p     = S.w_f;
-        M.n_sampl=S.n;
-    else
-        fprintf('\nforward step:        ')
-        P.sig2_c    = P.sigma_c^2*V.dt;
-        P.kx        = P.k'*V.x;
-        if V.M==1
-            P.sig2_h    = P.sigma_h.^2*V.dt;
-            P.g         = 1-V.dt/P.tau_h;
-        end
-        V.N = Nparticles;
-        S   = smc_oopsi_forward(V,F,P);
-    end;
+    S   = smc_oopsi_forward(V,F,P);
 
     %% backward step
     fprintf('\nbackward step:       ')
@@ -269,7 +245,7 @@ while conv==false;
     else
         M_best  = M;                     % required for output of function
         E_best  = P;
-        conv= true;
+        conv    = true;
     end
 
     %     M_best  = M;                     % update best moments

@@ -20,6 +20,37 @@ function S = smc_oopsi_forward(V,F,P)
 
 %% allocate memory and initialize stuff
 
+% if true_n                                           % this isn't exactly correct, should just use this for selecting spike train, and stil use smc to get calcium
+%     fprintf('\nusing provided spike train, skipping forward step\n')
+%     S.n = V.true_n;
+%     S.C  = filter(1,[1 -(1-P.a)],S.n*P.A);          % calcium concentration
+%     if V.M>0
+%         for m=1:V.M
+%             P.sig2_h    = P.sigma_h.^2*V.dt;
+%             P.g(m)      = 1-V.dt/P.tau_h(m);
+%             S.h(1,:,m)  = filter(1,[1 P.g(m)-1],S.n);
+%         end
+%     end
+%     V.N     = 1;
+%     S.w_f   = 1+0*S.n;
+%     S.w_b   = S.w_f;
+%     S.p     = S.w_f;
+%     M.n_sampl=S.n;
+% else
+fprintf('\nT = %g steps',V.T)
+fprintf('\nforward step:        ')
+P.sig2_c    = P.sigma_c^2*V.dt;
+P.kx        = P.k'*V.x;
+if V.M==1
+    P.sig2_h    = P.sigma_h.^2*V.dt;
+    P.g         = 1-V.dt/P.tau_h;
+end
+%     V.N = Nparticles;
+%     S   = smc_oopsi_forward(V,F,P);
+% end;
+
+
+
 % extize particle info
 S.p     = zeros(V.N,V.T);                   % extize rate
 S.n     = false(V.N,V.T);                   % extize spike counts
@@ -269,15 +300,19 @@ if V.M>0                                  % update noise on h
     end
 
     % update rate and sample spikes
-    hs              = S.h_new;              % this is required for matlab to handle a m-by-n-by-p matrix
-    h(:,1:V.M)    = hs(:,1,1:V.M);      % this too
-    y_t             = P.kx(t)+P.omega'*h';  % input to neuron
-    S.p_new         = 1-exp(-exp(y_t)*V.dt);  % update rate for those particles with y_t<0
-    S.p_new         = S.p_new(:);
+    hs          = S.h_new;              % this is required for matlab to handle a m-by-n-by-p matrix
+    h(:,1:V.M)  = hs(:,1,1:V.M);      % this too
+    y_t         = P.kx(t)+P.omega'*h';  % input to neuron
+    S.p_new     = 1-exp(-exp(y_t)*V.dt);  % update rate for those particles with y_t<0
+    S.p_new     = S.p_new(:);
 else
-    S.p_new         = S.p(:,t);
+    S.p_new     = S.p(:,t);
 end
-S.next_n        = A.U_sampl(:,t)<S.p_new;   % sample n
+if ~V.true_n
+    S.next_n    = A.U_sampl(:,t)<S.p_new;   % sample n
+else
+    S.next_n    = ass;
+end
 S.next_C        = (1-P.a)*S.C(:,t-1)+P.A*S.next_n+P.a*P.C_0+A.epsilon_c(:,t);% sample C
 
 % get weights at every observation          %THIS NEEDS FIX FOR EPI DATA
@@ -405,8 +440,8 @@ sum_logs        = log_quotient+log(S.w_f(:,t-1));   % update log(weights)
 w               = exp(sum_logs-max(sum_logs));      % exponentiate log(weights)
 S.next_w_f      = w./sum(w);                        % normalize such that they sum to unity
 
-if any(isnan(w)), Fs=1024; ts=0:1/Fs:1; sound(sin(2*pi*ts*200)), 
-    warning('smc:weights','some weights are NaN') 
-    keyboard, 
+if any(isnan(w)), Fs=1024; ts=0:1/Fs:1; sound(sin(2*pi*ts*200)),
+    warning('smc:weights','some weights are NaN')
+    keyboard,
 end
 end %condtional sampler
