@@ -62,8 +62,8 @@ if ~isfield(P,'k'),                                     % linear filter
 end  
 if ~isfield(P,'alpha'), P.alpha = mean(F);      end     % scale of F
 if ~isfield(P,'beta'),  P.beta  = min(F);       end     % offset of F
-if ~isfield(P,'gamma'), P.gamma = 0;            end     % scaled variance
 if ~isfield(P,'zeta'),  P.zeta  = P.alpha/5;    end     % constant variance
+if ~isfield(P,'gamma'), P.gamma = P.zeta/5;     end     % scaled variance
 if V.M==1                                               % if there are spike history terms
     if ~isfield(P,'omega'),   P.omega   = -1;   end     % weight
     if ~isfield(P,'tau_h'),   P.tau_h   = 0.02; end     % time constant
