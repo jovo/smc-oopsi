@@ -27,6 +27,7 @@ if ~isfield(V,'fast_do'),   V.fast_do   = 0;        end         % whether to use
 if ~isfield(V,'smc_do'),    V.smc_do    = 0;        end         % whether to use particle filter, aka, smc_oopsi
 if ~isfield(V,'save'),      V.save      = 0;        end         % whether to save results and figs
 if ~isfield(V,'plot'),      V.plot      = 0;        end         % whether to plot the fluorescence and spike trains
+if nargin < 3,              P           = struct;   end         % create structure for parameters, if none provided
 if V.save == 1
     if ~isfield(V,'name'),                                      % give data a unique, time-stamped name, if there is not one specified
         lic     = str2num(license);                             % jovo's license #
@@ -41,7 +42,6 @@ if V.save == 1
     end
     V.name_dat = [fdat V.name];                                 % filename for data
     V.name_fig = [ffig V.name];                                 % filename for figure
-    if nargin < 3, P = struct; end                              % create structure for parameters, if none provided
     save(V.name_dat,'V')
 end
 
