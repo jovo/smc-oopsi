@@ -23,10 +23,10 @@ if ~isfield(V,'x'),     V.x     = ones(1,V.T);  end     % stimulus
 if ~isfield(V,'Scan'),  V.Scan  = 0;            end     % epi or scan
 if ~isfield(V,'name'),  V.name  ='oopsi';       end     % name for output and figure
 if ~isfield(V,'ignorelike'),  V.ignorelik  = 1; end     % epi or scan
-if ~isfield(V,'smc_iter_max'),                          % max # of iterations to estimate params
-    reply = input('do you want to estimate parameters? y/n [y] (case sensitive): ', 's');
-    if reply == 'y'; V.smc_iter_max = 2;
-    else V.smc_iter_max = 0; end
+if ~isfield(V,'true_n'),V.true_n = 0;           end     % whether true spikes are available   
+if ~isfield(V,'smc_iter_max'),                          % max # of iterations before convergence
+    reply = str2double(input('\nhow many EM iterations would you like to perform \nto estimate parameters (0 means use default parameters): ', 's'));
+    V.smc_iter_max = reply;
 end
 if ~isfield(V,'dt'),
     fr = input('what was the frame rate for this movie (in Hz)? ');

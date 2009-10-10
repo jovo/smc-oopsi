@@ -23,44 +23,50 @@ function varargout = run_oopsi(F,V,P)
 %% set code Variables
 
 if nargin < 2,              V           = struct;   end         % create structure for algorithmic variables, if none provided
-if ~isfield(V,'fast_do'),   V.fast_do   = 0;        end         % whether to use fast filter, aka, fast_oopsi
-if ~isfield(V,'smc_do'),    V.smc_do    = 0;        end         % whether to use particle filter, aka, smc_oopsi
-if ~isfield(V,'save'),      V.save      = 0;        end         % whether to save results and figs
-if ~isfield(V,'plot'),      V.plot      = 0;        end         % whether to plot the fluorescence and spike trains
+if nargout == 2
+    V.fast_do = 1;
+    V.fast_do   = 1;
+end    
+if ~isfield(V,'fast_do'),   V.fast_do   = 1;        end         % whether to use fast filter, aka, fast_oopsi
+if ~isfield(V,'smc_do'),    V.smc_do    = 1;        end         % whether to use particle filter, aka, smc_oopsi
 if nargin < 3,              P           = struct;   end         % create structure for parameters, if none provided
-if V.save == 1
-    if ~isfield(V,'name'),                                      % give data a unique, time-stamped name, if there is not one specified
-        lic     = str2num(license);                             % jovo's license #
-        if lic == 273165,                                       % if using jovo's computer, set data and fig folders
-            fdat = '~/Research/oopsi/meta-oopsi/data/jovo';
-            ffig = '~/Research/oopsi/meta-oopsi/figs/jovo';
-        else                                                    % else just use current dir
-            fdat = pwd;
-            ffig = pwd;
-        end
-        V.name  = ['/oopsi_' datestr(clock,30)];
+if ~isfield(V,'plot'),      V.plot      = 1;        end         % whether to plot the fluorescence and spike trains
+if ~isfield(V,'name'),                                          % give data a unique, time-stamped name, if there is not one specified
+    lic     = str2num(license);                                 % jovo's license #
+    if lic == 273165,                                           % if using jovo's computer, set data and fig folders
+        fdat = '~/Research/oopsi/meta-oopsi/data/jovo';
+        ffig = '~/Research/oopsi/meta-oopsi/figs/jovo';
+    else                                                        % else just use current dir
+        fdat = pwd;
+        ffig = pwd;
     end
+    V.name  = ['/oopsi_' datestr(clock,30)];
+end
+
+if ~isfield(V,'save'),      V.save      = 0;        end         % whether to save results and figs
+if V.save == 1
     V.name_dat = [fdat V.name];                                 % filename for data
-    V.name_fig = [ffig V.name];                                 % filename for figure
     save(V.name_dat,'V')
 end
 
 %% infer spikes and estimate parameters
 
 if V.fast_do == 1                                               % infer spikes using fast-oopsi
+    fprintf('\nfast-oopsi')
     [fast.n fast.P fast.V]= fast_oopsi(F,V,P);
     if V.save, save(V.name_dat,'fast','-append'); end
 end
 
 if V.smc_do == 1                                                % infer spikes using smc-oopsi
+    fprintf('\nsmc-oopsi')
     siz=size(F); if siz(1)>1, F=F'; end
     if V.fast_do == 1;
         if ~isfield(P,'A'),     P.A     = 50;   end             % initialize jump in [Ca++] after spike
         if ~isfield(P,'n'),     P.n     = 1;    end             % Hill coefficient
         if ~isfield(P,'k_d'),   P.k_d   = 200;  end             % dissociation constant
         if ~isfield(V,'T'),     V.T     = fast.V.T; end         % number of time steps
-        if ~isfield(V,'dt'),    V.T     = fast.V.dt; end        % frame duration, aka, 1/(framte rate)
-        P.tau_c = V.dt/(1-fast.P.gam);                          % time constant
+        if ~isfield(V,'dt'),    V.dt    = fast.V.dt; end        % frame duration, aka, 1/(framte rate)
+        P.tau_c = fast.V.dt/(1-fast.P.gam);                          % time constant
         nnorm   = fast.n/max(fast.n);                           % normalize inferred spike train
         C       = filter(1,[1 -fast.P.gam],P.A*nnorm)';         % calcium concentration
         C1      = [Hill_v1(P,C); ones(1,V.T)];                  % for brevity
@@ -91,12 +97,9 @@ end
 %% plot results
 
 if V.plot
+    V.name_fig = [ffig V.name];                                 % filename for figure
     fig=figure(3); clf,
     V.T = length(F);
-    if V.fast_do==1,
-        V.dt=fast.V.dt;  V.name_fig=fast.V.name_fig;
-    else  V.dt=smc.V.dt; V.name_fig=smc.V.name_fig;
-    end
     if (V.fast_do==1 && V.smc_do==1), nrows=3; else nrows=2; end
     gray    = [.75 .75 .75];            % define gray color
     inter   = 'tex';                    % interpreter for axis labels
