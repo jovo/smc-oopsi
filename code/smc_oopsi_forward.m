@@ -39,7 +39,7 @@ function S = smc_oopsi_forward(V,F,P)
 % else
 fprintf('\nT = %g steps',V.T)
 fprintf('\nforward step:        ')
-P.sig2_c    = P.sigma_c^2*V.dt;
+% P.sig2_c    = P.sigma_c^2*V.dt;
 P.kx        = P.k'*V.x;
 if V.M==1
     P.sig2_h    = P.sigma_h.^2*V.dt;
@@ -308,10 +308,10 @@ if V.M>0                                  % update noise on h
 else
     S.p_new     = S.p(:,t);
 end
-if ~V.true_n
+if ~V.use_true_n
     S.next_n    = A.U_sampl(:,t)<S.p_new;   % sample n
 else
-    S.next_n    = ass;
+    S.next_n    = V.true_n;
 end
 S.next_C        = (1-P.a)*S.C(:,t-1)+P.A*S.next_n+P.a*P.C_0+A.epsilon_c(:,t);% sample C
 

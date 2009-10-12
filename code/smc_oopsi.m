@@ -23,7 +23,11 @@ if ~isfield(V,'x'),     V.x     = ones(1,V.T);  end     % stimulus
 if ~isfield(V,'Scan'),  V.Scan  = 0;            end     % epi or scan
 if ~isfield(V,'name'),  V.name  ='oopsi';       end     % name for output and figure
 if ~isfield(V,'ignorelike'),  V.ignorelik  = 1; end     % epi or scan
-if ~isfield(V,'true_n'),V.true_n = 0;           end     % whether true spikes are available   
+if ~isfield(V,'true_n'),                                % if true spikes are not available
+    V.use_true_n = 0;                                   % don't use them for anything
+else
+    V.use_true_n = 1;
+end    
 if ~isfield(V,'smc_iter_max'),                          % max # of iterations before convergence
     reply = str2double(input('\nhow many EM iterations would you like to perform \nto estimate parameters (0 means use default parameters): ', 's'));
     V.smc_iter_max = reply;
@@ -34,13 +38,12 @@ if ~isfield(V,'dt'),
 end
 
 % set which parameters to estimate
-if ~isfield(V,'est_c'),     V.est_c   = 1;      end     % calcium params
-if ~isfield(V,'est_n'),     V.est_n   = 1;      end     % b,k
-if ~isfield(V,'est_h'),     V.est_h   = 0;      end     % w
-if ~isfield(V,'est_F'),     V.est_F   = 1;      end     % alpha, beta
-if ~isfield(V,'smc_plot'),  V.smc_plot = 1;     end     % plot results with each iteration
-if ~isfield(V,'holdTau'),   V.holdTau=0;        end     % whether to hold tau_c fixed while estimating parameters (useful when data is poor)
-if isfield(V,'true_n'),     true_n=1;           else true_n=0;  end
+if ~isfield(V,'est_c'),     V.est_c     = 1;    end     % tau_c, A, C_0
+if ~isfield(V,'est_t'),     V.est_t     = 1;    end     % tau_c (useful when data is poor)
+if ~isfield(V,'est_n'),     V.est_n     = 1;    end     % b,k
+if ~isfield(V,'est_h'),     V.est_h     = 0;    end     % w
+if ~isfield(V,'est_F'),     V.est_F     = 1;    end     % alpha, beta
+if ~isfield(V,'smc_plot'),  V.smc_plot  = 1;    end     % plot results with each iteration
 if V.smc_iter_max>1 && V.smc_plot == 1                  % if estimating parameters, plot stuff for each iteration
     figNum=10;
     figure(figNum), clf, nrows=4;
@@ -84,6 +87,7 @@ starttime   = cputime;
 while conv==false;
     i           = i+1;                                  % index for the iteration of EM
     P.a         = V.dt/P.tau_c;                         % for brevity
+    P.sig2_c    = P.sigma_c^2*V.dt;                     % for brevity
     V.smc_iter_tot = i;                                 % total number of iterations completed
 
     %% forward step
@@ -97,7 +101,7 @@ while conv==false;
     Z.C0mat = Z.C0(:,Z.oney)';
 
     if V.est_c==false                               % if not maximizing the calcium parameters, then the backward step is simple
-        if true_n==1                                % when spike train is provided, backwards is not necessary
+        if V.use_true_n                                % when spike train is provided, backwards is not necessary
             S.w_b=S.w_f;
         else
             for t=V.T-V.freq-1:-1:V.freq+1          % actually recurse backwards for each time step
@@ -112,14 +116,14 @@ while conv==false;
         M.J = 0;                                    % remaining terms for calcium par
         M.K = 0;
         for t=V.T-V.freq-1:-1:V.freq+1
-            if true_n                               % force true spikes hack
+            if V.use_true_n                               % force true spikes hack
                 Z.C0    = S.C(t-1);
                 Z.C0mat = Z.C0;
                 Z.C1    = S.C(t);
                 Z.C1mat = Z.C1;
                 Z.PHH   = 1;
                 Z.w_b   = 1;
-                Z.n1 = S.n(t);
+                Z.n1    = S.n(t);
             else
                 Z = smc_oopsi_backward(V,S,P,Z,t);
             end
@@ -187,17 +191,6 @@ while conv==false;
             M_best  = M;                    % update best moments
             maxlik  = P.lik;                % update best likelihood
             i_best  = i;                    % save iteration number of best one
-            if V.smc_plot
-                figure(figNum)
-                subplot(nrows,1,4), cla,hold on,% plot spike train estimate
-                if isfield(V,'n'), stem(V.n,'Marker','.',...
-                        'MarkerSize',20,'LineWidth',2,'Color',[.75 .75 .75]); end
-                nvar = sum((repmat(M.nbar,V.N,1)-S.n).^2)/V.N;
-                BarVar=M.nbar+nvar; BarVar(BarVar>1)=1;
-                stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 .8 0]);
-                stem(M.nbar,'Marker','none','LineWidth',2,'Color',[0 .5 0])
-                axis([0 V.T 0 1]),
-            end
         end
 
         % when estimating calcium parameters, display param estimates and lik
@@ -213,27 +206,36 @@ while conv==false;
             fprintf('\nbeta   = %.2f',P.beta)
             fprintf('\ngamma  = %.2g',P.gamma)
         end
+        if V.est_n == true
+            fprintf('\nk      = %.2f',P.k)
+        end
 
         % plot lik and inferrence
         if V.smc_plot
-            if V.est_n == true
-                fprintf('\nk      = %.2f',P.k)
-            end
+            figure(figNum)
             subplot(nrows,1,1), hold on, plot(i,P.lik,'o'), axis('tight')
             subplot(nrows,1,2), plot(F,'k'), hold on,
-            Cbar = sum(S.w_b.*S.C,1);
-            plot(P.alpha*Hill_v1(P,Cbar)+P.beta,'b'), hold off, axis('tight')
-            subplot(nrows,1,3), cla, hold on,   % plot spike train estimate
-            axis([0 V.T 0 1]),
+            plot(P.alpha*Hill_v1(P,sum(S.w_b.*S.C,1))+P.beta,'b'), hold off, axis('tight')
+
+            % plot spike train estimate
+            subplot(nrows,1,3), cla, hold on, 
             if isfield(V,'n'),
                 stem(V.n,'Marker','.','MarkerSize',20,'LineWidth',2,...
                     'Color',[.75 .75 .75],'MarkerFaceColor','k','MarkerEdgeColor','k');
                 axis('tight'),
             end
-            Cvar = sum((repmat(Cbar,V.N,1)-S.C).^2)/V.N;
-            BarVar=M.nbar+nvar; BarVar(BarVar>1)=1;
-            stem(BarVar,'Marker','none','LineWidth',2,'Color',[.8 .8 0]);
             stem(M.nbar,'Marker','none','LineWidth',2,'Color',[0 .5 0])
+            ylabel('current n')
+            axis([0 V.T 0 1]),
+            
+            % plot "best" spike train estimate
+            subplot(nrows,1,4), cla,hold on,
+            if isfield(V,'n'), stem(V.n,'Marker','.',...
+                    'MarkerSize',20,'LineWidth',2,'Color',[.75 .75 .75]); end
+            stem(M_best.nbar,'Marker','none','LineWidth',2,'Color',[0 .5 0])
+            ylabel('best n')
+            axis([0 V.T 0 1]),
+
 
             drawnow
         end

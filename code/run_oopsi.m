@@ -24,8 +24,8 @@ function varargout = run_oopsi(F,V,P)
 
 if nargin < 2,              V           = struct;   end         % create structure for algorithmic variables, if none provided
 if nargout == 2
-    V.fast_do = 1;
     V.fast_do   = 1;
+    V.smc_do    = 1;
 end    
 if ~isfield(V,'fast_do'),   V.fast_do   = 1;        end         % whether to use fast filter, aka, fast_oopsi
 if ~isfield(V,'smc_do'),    V.smc_do    = 1;        end         % whether to use particle filter, aka, smc_oopsi
@@ -49,6 +49,8 @@ if V.save == 1
     save(V.name_dat,'V')
 end
 
+F=F-min(F); F=F/max(F); F=F+eps;
+
 %% infer spikes and estimate parameters
 
 if V.fast_do == 1                                               % infer spikes using fast-oopsi
@@ -66,7 +68,8 @@ if V.smc_do == 1                                                % infer spikes u
         if ~isfield(P,'k_d'),   P.k_d   = 200;  end             % dissociation constant
         if ~isfield(V,'T'),     V.T     = fast.V.T; end         % number of time steps
         if ~isfield(V,'dt'),    V.dt    = fast.V.dt; end        % frame duration, aka, 1/(framte rate)
-        P.tau_c = fast.V.dt/(1-fast.P.gam);                          % time constant
+        V.fast_n= fast.n;                                       % keep fast inference for comparison purposes
+        P.tau_c = fast.V.dt/(1-fast.P.gam);                     % time constant
         nnorm   = fast.n/max(fast.n);                           % normalize inferred spike train
         C       = filter(1,[1 -fast.P.gam],P.A*nnorm)';         % calcium concentration
         C1      = [Hill_v1(P,C); ones(1,V.T)];                  % for brevity

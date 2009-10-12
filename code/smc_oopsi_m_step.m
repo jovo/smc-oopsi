@@ -93,7 +93,7 @@ end
 %% MLE for calcium parameters
 if V.est_c == true
     fprintf('estimating calcium parammeters\n')
-    if V.holdTau == 1
+    if V.est_t == 0
         [ve_x fval] = quadprog(M.Q(2:3,2:3), M.L(2:3),[],[],[],[],[0 0],[inf inf],[E.A E.C_0/E.tau_c]+eps,optionsQP);
         Enew.tau_c  = E.tau_c;
         Enew.A      = ve_x(1);
