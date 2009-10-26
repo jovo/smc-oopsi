@@ -1,4 +1,4 @@
-function S = smc_oopsi_forward(V,F,P)
+function S = smc_oopsi_forward(F,V,P)
 % the function does the backwards sampling particle filter
 % notes: this function assumes spike histories are included.  to turn them
 % off, make sure that V.M=0 (M is the # of spike history terms).

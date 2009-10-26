@@ -27,8 +27,12 @@ if nargout == 2
     V.fast_do   = 1;
     V.smc_do    = 1;
 end    
-if ~isfield(V,'fast_do'),   V.fast_do   = 1;        end         % whether to use fast filter, aka, fast_oopsi
-if ~isfield(V,'smc_do'),    V.smc_do    = 1;        end         % whether to use particle filter, aka, smc_oopsi
+if ~isfield(V,'fast_do'),   V.fast_do   = 0;        end         % whether to use fast filter, aka, fast_oopsi
+if ~isfield(V,'smc_do'),    V.smc_do    = 0;        end         % whether to use particle filter, aka, smc_oopsi
+if V.fast_do==0 && V.smc_do==0
+    reply = input('\nwhich algorithm would you love to use?\n type 0 for fast, or 1 for smc: ');
+    if reply == 0, V.fast_do=1; elseif reply == 1, V.smc_d0=1; end
+end
 if nargin < 3,              P           = struct;   end         % create structure for parameters, if none provided
 if ~isfield(V,'plot'),      V.plot      = 1;        end         % whether to plot the fluorescence and spike trains
 if ~isfield(V,'name'),                                          % give data a unique, time-stamped name, if there is not one specified
