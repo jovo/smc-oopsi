@@ -83,26 +83,26 @@ end
             RateParams=E.k;                                     % vector of parameters to estimate (changes depending on user input of which parameters to estimate)
             sp      = S.n==1;                                   % find (particles,time step) pairs that spike
             nosp    = S.n==0;                                   % don't spike
-            x       = repmat(V.x,1,V.N);                        % generate matrix for gradinent
-            zeroy   = zeros(V.N,V.T);                           % make matrix of zeros for evaluating lik
+            x       = repmat(V.x,1,V.Nparticles);                        % generate matrix for gradinent
+            zeroy   = zeros(V.Nparticles,V.T);                           % make matrix of zeros for evaluating lik
 
             if V.est_h == true
-                if V.M>0                                        % if spike history terms are present
+                if V.Nspikehist>0                                        % if spike history terms are present
                     RateParams=[RateParams; E.omega];           % also estimate omega
-                    for i=1:V.M                                 % and modify stimulus matrix for gradient
-                        x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.N*V.T);
+                    for i=1:V.Nspikehist                                 % and modify stimulus matrix for gradient
+                        x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.Nparticles*V.T);
                     end
                 end
 
                 %[bko lik_r] = fminunc(@f_bko,RateParams,optionsGLM);% find MLE
                 Z=ones(size(RateParams));
                 [bko lik_r]=fmincon(@f_bko,RateParams,[],[],[],[],-10*Z,10*Z,[],optionsGLM);%fix for h-problem
-                Enew.k      = bko(1:end-V.M);                   % set new parameter estimes
-                if V.M>0, Enew.omega = bko(end-V.M+1:end); end  % for omega too
+                Enew.k      = bko(1:end-V.Nspikehist);                   % set new parameter estimes
+                if V.Nspikehist>0, Enew.omega = bko(end-V.Nspikehist+1:end); end  % for omega too
             else
-                if V.M>0                                        % if spike history terms are present
-                    for i=1:V.M                                 % and modify stimulus matrix for gradient
-                        x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.N*V.T);
+                if V.Nspikehist>0                                        % if spike history terms are present
+                    for i=1:V.Nspikehist                                 % and modify stimulus matrix for gradient
+                        x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.Nparticles*V.T);
                     end
                 end
 
@@ -115,10 +115,10 @@ end
 
         function [lik dlik]= f_bko(RateParams)                  % get lik and grad
 
-            xk      = RateParams(1:end-V.M)'*V.x;               % filtered stimulus
+            xk      = RateParams(1:end-V.Nspikehist)'*V.x;               % filtered stimulus
             hs      = zeroy;                                    % incorporate spike history terms
-            for l=1:V.M, hs  = hs+RateParams(end-V.M+l)*S.h(:,:,l); end
-            s       = repmat(xk,V.N,1) + hs;
+            for l=1:V.Nspikehist, hs  = hs+RateParams(end-V.Nspikehist+l)*S.h(:,:,l); end
+            s       = repmat(xk,V.Nparticles,1) + hs;
 
             f_kdt   = exp(s)*V.dt;                              % shorthand
             ef      = exp(f_kdt);                               % shorthand
@@ -135,8 +135,8 @@ end
 
             xk      = RateParams'*V.x;                          % filtered stimulus
             hs      = zeroy;                                    % incorporate spike history terms
-            for l=1:V.M, hs  = hs+E.omega*S.h(:,:,l); end
-            s       = repmat(xk,V.N,1) + hs;
+            for l=1:V.Nspikehist, hs  = hs+E.omega*S.h(:,:,l); end
+            s       = repmat(xk,V.Nparticles,1) + hs;
 
             f_kdt   = exp(s)*V.dt;                              % shorthand
             ef      = exp(f_kdt);                               % shorthand
@@ -173,7 +173,7 @@ end
         end
 
         % % %% MLE for spike history parameters
-        % % for m=1:V.M
+        % % for m=1:V.Nspikehist
         % %     Enew.sigma_h(m)= sum(M.v{m})/V.T;
         % % end
 

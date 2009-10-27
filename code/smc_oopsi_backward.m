@@ -17,8 +17,8 @@ function M = smc_oopsi_backward(S,V,P)
 
 
 fprintf('\nbackward step:       ')
-Z.oney  = ones(V.N,1);                          % initialize stuff for speed
-Z.zeroy = zeros(V.N);
+Z.oney  = ones(V.Nparticles,1);                 % initialize stuff for speed
+Z.zeroy = zeros(V.Nparticles);
 Z.C0    = S.C(:,V.T);
 Z.C0mat = Z.C0(:,Z.oney)';
 
@@ -60,7 +60,7 @@ else                                            % if maximizing calcium paramete
         M.Q(1,2)= M.Q(1,2) - Z.n1'*Z.PHH*C0dt;
         M.Q(1,3)= M.Q(1,3) + sum(sum(-Z.PHH.*Z.C0mat'*V.dt^2));
         M.Q(2,2)= M.Q(2,2) + sum(Z.PHH'*(Z.n1.^2));
-        M.Q(2,3)= M.Q(2,3) + sum(sum(Z.PHH(:).*repmat(Z.n1,V.N,1))*V.dt);
+        M.Q(2,3)= M.Q(2,3) + sum(sum(Z.PHH(:).*repmat(Z.n1,V.Nparticles,1))*V.dt);
         M.Q(3,3)= M.Q(3,3) + sum(Z.PHH(:))*V.dt^2;
 
         M.L(1)  = M.L(1) + sum(bPHH*C0dt);          % L-term in QP
@@ -121,7 +121,7 @@ ln_PC_Cn    = -0.5*(Z.C1mat - mumat).^2/P.sig2_c;   % P[C_t^i | C_{t-1}^j, n_t^i
 
 % compute ln P[h_t^i | h_{t-1}^j, n_{t-1}^i]
 ln_Ph_hn    = Z.zeroy;                              % reset transition prob for h terms
-for m=1:V.M                                         % for each h term
+for m=1:V.Nspikehist                                % for each h term
     h1      = S.h(:,t,m);                           % faster than repmat
     h1      = h1(:,Z.oney);
     h0      = P.g(m)*S.h(:,t-1,m)+S.n(:,t-1);
@@ -135,7 +135,7 @@ mx      = max(sum_lns,[],1);                        % find max in each of row
 mx      = mx(Z.oney,:);                             % make a matrix of maxes
 T0      = exp(sum_lns-mx);                          % exponentiate subtracting maxes (so that in each row, the max entry is exp(0)=1
 Tn      = sum(T0,1);                                % then normalize
-T       = T0.*repmat(1./Tn(:)', V.N, 1);            % such that each column sums to 1
+T       = T0.*repmat(1./Tn(:)', V.Nparticles, 1);   % such that each column sums to 1
 
 % compute P[H_t^i, H_{t-1}^j | O]
 PHHn    = (T*S.w_f(:,t-1))';                        % denominator
@@ -144,7 +144,7 @@ PHHn2   = PHHn(Z.oney,:)';                          % faster than repmat
 PHH     = T .* (S.w_b(:,t)*S.w_f(:,t-1)')./PHHn2;   % normalize such that sum(PHH)=1
 sumPHH  = sum(PHH(:));
 if sumPHH==0
-    Z.PHH = ones(V.N)/(V.N);
+    Z.PHH = ones(V.Nparticles)/(V.Nparticles);
 else
     Z.PHH   =  PHH/sum(PHH(:));
 end

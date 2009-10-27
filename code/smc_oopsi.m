@@ -16,15 +16,15 @@ if nargin < 2,          V       = struct;       end
 if ~isfield(V,'T'),     V.T     = length(F);    end     % # of observations
 if ~isfield(V,'freq'),  V.freq  = 1;            end     % # time steps between observations
 if ~isfield(V,'T_o'),   V.T_o   = V.T;          end     % # of observations
-if ~isfield(V,'N'),     V.N     = 99;           end     % # particles
-if ~isfield(V,'M'),     V.M     = 0;            end     % # of spike history terms
-if ~isfield(V,'pf'),    V.pf    = 1;            end     % whether to use conditional sampler
 if ~isfield(V,'x'),     V.x     = ones(1,V.T);  end     % stimulus
-if ~isfield(V,'Scan'),  V.Scan  = 0;            end     % epi or scan
+if ~isfield(V,'scan'),  V.scan  = 0;            end     % epi or scan
 if ~isfield(V,'name'),  V.name  ='oopsi';       end     % name for output and figure
-if ~isfield(V,'ignorelike'),  V.ignorelik  = 1; end     % epi or scan
-if ~isfield(V,'true_n'),                                % if true spikes are not available
-    V.use_true_n = 0;                                   % don't use them for anything
+if ~isfield(V,'Nparticles'),	V.Nparticles    = 99; 	end % # particles
+if ~isfield(V,'Nspikehist'),    V.Nspikehist	= 0; 	end % # of spike history terms
+if ~isfield(V,'condsamp'),    	V.condsamp 		= 1;    end % whether to use conditional sampler
+if ~isfield(V,'ignorelik'),  	V.ignorelik		= 1; 	end % epi or scan
+if ~isfield(V,'true_n'),                        % if true spikes are not available
+    V.use_true_n = 0;                           % don't use them for anything
 else
     V.use_true_n = 1;
 end
@@ -63,7 +63,7 @@ if ~isfield(P,'alpha'), P.alpha = mean(F);      end     % scale of F
 if ~isfield(P,'beta'),  P.beta  = min(F);       end     % offset of F
 if ~isfield(P,'zeta'),  P.zeta  = P.alpha/5;    end     % constant variance
 if ~isfield(P,'gamma'), P.gamma = P.zeta/5;     end     % scaled variance
-if V.M==1                                               % if there are spike history terms
+if V.Nspikehist==1                                               % if there are spike history terms
     if ~isfield(P,'omega'),   P.omega   = -1;   end     % weight
     if ~isfield(P,'tau_h'),   P.tau_h   = 0.02; end     % time constant
     if ~isfield(P,'sigma_h'), P.sigma_h = 0;    end     % stan dev of noise
