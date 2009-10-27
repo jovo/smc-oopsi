@@ -16,14 +16,6 @@ P   = update_params(V,S,M,P,F); % update parameters
 i   = length(P.lik);
 fprintf('\n\nIteration #%g, lik=%g, dlik=%g\n',i,P.lik(end),P.lik(end)-Eold.lik(end))
 
-% keep record of best stuff, or if told to ignore lik
-% if V.ignorelik==1 || P.lik(end)>= maxlik
-%     E_best  = P;                    % update best parameters
-%     M_best  = M;                    % update best moments
-%     maxlik  = P.lik(end);           % update best likelihood
-%     i_best  = i;                    % save iteration number of best one
-% end
-
 % when estimating calcium parameters, display param estimates and lik
 if V.est_c==1
     dtheta  = norm([P.tau_c; P.A; P.C_0]-...
@@ -88,16 +80,16 @@ end
         if V.est_n == true
             % MLE for spike rate parameters: baseline (b), linear filter (k), and spike history weights (omega)
             fprintf('\nestimating spike rate params\n')
-            RateParams=E.k;                                         % vector of parameters to estimate (changes depending on user input of which parameters to estimate)
-            sp      = S.n==1;                                       % find (particles,time step) pairs that spike
-            nosp    = S.n==0;                                       % don't spike
+            RateParams=E.k;                                     % vector of parameters to estimate (changes depending on user input of which parameters to estimate)
+            sp      = S.n==1;                                   % find (particles,time step) pairs that spike
+            nosp    = S.n==0;                                   % don't spike
             x       = repmat(V.x,1,V.N);                        % generate matrix for gradinent
             zeroy   = zeros(V.N,V.T);                           % make matrix of zeros for evaluating lik
 
             if V.est_h == true
-                if V.M>0                                          % if spike history terms are present
-                    RateParams=[RateParams; E.omega];               % also estimate omega
-                    for i=1:V.M                                   % and modify stimulus matrix for gradient
+                if V.M>0                                        % if spike history terms are present
+                    RateParams=[RateParams; E.omega];           % also estimate omega
+                    for i=1:V.M                                 % and modify stimulus matrix for gradient
                         x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.N*V.T);
                     end
                 end
@@ -105,17 +97,17 @@ end
                 %[bko lik_r] = fminunc(@f_bko,RateParams,optionsGLM);% find MLE
                 Z=ones(size(RateParams));
                 [bko lik_r]=fmincon(@f_bko,RateParams,[],[],[],[],-10*Z,10*Z,[],optionsGLM);%fix for h-problem
-                Enew.k      = bko(1:end-V.M);                     % set new parameter estimes
-                if V.M>0, Enew.omega = bko(end-V.M+1:end); end   % for omega too
+                Enew.k      = bko(1:end-V.M);                   % set new parameter estimes
+                if V.M>0, Enew.omega = bko(end-V.M+1:end); end  % for omega too
             else
-                if V.M>0                                          % if spike history terms are present
-                    for i=1:V.M                                   % and modify stimulus matrix for gradient
+                if V.M>0                                        % if spike history terms are present
+                    for i=1:V.M                                 % and modify stimulus matrix for gradient
                         x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.N*V.T);
                     end
                 end
 
                 [bk lik_r]  = fminunc(@f_bk,RateParams,optionsGLM); % find MLE
-                Enew.k      = bk(1:end);                            % set new parameter estimes
+                Enew.k      = bk(1:end);                        % set new parameter estimes
             end
             Enew.lik_r   = -lik_r;
             lik = [lik Enew.lik_r];
@@ -123,12 +115,12 @@ end
 
         function [lik dlik]= f_bko(RateParams)                  % get lik and grad
 
-            xk      = RateParams(1:end-V.M)'*V.x;           % filtered stimulus
+            xk      = RateParams(1:end-V.M)'*V.x;               % filtered stimulus
             hs      = zeroy;                                    % incorporate spike history terms
             for l=1:V.M, hs  = hs+RateParams(end-V.M+l)*S.h(:,:,l); end
             s       = repmat(xk,V.N,1) + hs;
 
-            f_kdt   = exp(s)*V.dt;                            % shorthand
+            f_kdt   = exp(s)*V.dt;                              % shorthand
             ef      = exp(f_kdt);                               % shorthand
             lik     = -sum(S.w_b(sp).*log(1-1./ef(sp)))...      % liklihood
                 +sum(S.w_b(nosp).*f_kdt(nosp));
@@ -141,12 +133,12 @@ end
 
         function [lik dlik]= f_bk(RateParams)                   % get lik and grad
 
-            xk      = RateParams'*V.x;                        % filtered stimulus
+            xk      = RateParams'*V.x;                          % filtered stimulus
             hs      = zeroy;                                    % incorporate spike history terms
             for l=1:V.M, hs  = hs+E.omega*S.h(:,:,l); end
             s       = repmat(xk,V.N,1) + hs;
 
-            f_kdt   = exp(s)*V.dt;                            % shorthand
+            f_kdt   = exp(s)*V.dt;                              % shorthand
             ef      = exp(f_kdt);                               % shorthand
             lik     = -sum(S.w_b(sp).*log(1-1./ef(sp)))...      % liklihood
                 +sum(S.w_b(nosp).*f_kdt(nosp));
@@ -171,13 +163,13 @@ end
                 Enew.A      = ve_x(2);
                 Enew.C_0    = ve_x(3)/ve_x(1);
             end
-            fval        = M.K/2 + fval;                             % variance
-            Enew.sigma_c= sqrt(fval/(M.J*V.dt));                    % factor in dt
+            fval        = M.K/2 + fval;                         % variance
+            Enew.sigma_c= sqrt(fval/(M.J*V.dt));                % factor in dt
             Enew.lik_c  = - fval/(Enew.sigma_c*sqrt(V.dt)) - M.J*log(Enew.sigma_c);
             lik = [lik Enew.lik_c];
             
-            Enew.a         = V.dt/E.tau_c;                         % for brevity
-            Enew.sig2_c    = E.sigma_c^2*V.dt;                     % for brevity
+            Enew.a         = V.dt/E.tau_c;                      % for brevity
+            Enew.sig2_c    = E.sigma_c^2*V.dt;                  % for brevity
         end
 
         % % %% MLE for spike history parameters

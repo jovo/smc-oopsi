@@ -44,10 +44,6 @@ if ~isfield(V,'est_n'),     V.est_n     = 1;    end     % b,k
 if ~isfield(V,'est_h'),     V.est_h     = 0;    end     % w
 if ~isfield(V,'est_F'),     V.est_F     = 1;    end     % alpha, beta
 if ~isfield(V,'smc_plot'),  V.smc_plot  = 1;    end     % plot results with each iteration
-if V.smc_iter_max>1 && V.smc_plot == 1                  % if estimating parameters, plot stuff for each iteration
-    figNum=10;
-    figure(figNum), clf, nrows=4;
-end
 
 %% initialize model Parameters
 
@@ -72,27 +68,19 @@ if V.M==1                                               % if there are spike his
     if ~isfield(P,'tau_h'),   P.tau_h   = 0.02; end     % time constant
     if ~isfield(P,'sigma_h'), P.sigma_h = 0;    end     % stan dev of noise
 end
-if ~isfield(P,'a'),     P.a     = V.dt/P.tau_c; end
-if ~isfield(P,'sig2_c'),P.sig2_c= P.sigma_c^2*V.dt; end
+if ~isfield(P,'a'),     P.a     = V.dt/P.tau_c; end     % for brevity
+if ~isfield(P,'sig2_c'),P.sig2_c= P.sigma_c^2*V.dt; end % for brevity
 
 %% initialize other stuff
 starttime   = cputime;
-% i           = 0;            % iteration number of EM
-% i_best      = 0;            % best iteration so far
-P.lik       = -inf;         % we are trying to maximize the likelihood here
-% maxlik      = P.lik;        % max lik achieved so far
-F           = max(F,eps);   % in case there are any zeros in the F time series
-% Nparticles  = V.N;          % store initial V parameters
-% cnt         = 0;
+P.lik       = -inf;                                     % we are trying to maximize the likelihood here
+F           = max(F,eps);                               % in case there are any zeros in the F time series
 
-S = smc_oopsi_forward(F,V,P);                       % forward step
-M = smc_oopsi_backward(S,V,P);                      % backward step
+S = smc_oopsi_forward(F,V,P);                           % forward step
+M = smc_oopsi_backward(S,V,P);                          % backward step
 if V.smc_iter_max>1, P.conv=false; else P.conv=true; end
 
 while P.conv==false;
-%     i           = i+1;                                  % index for the iteration of EM
-%     V.smc_iter_tot = i;                                 % total number of iterations completed
-
     P = smc_oopsi_m_step(V,S,M,P,F);                    % m step
     S = smc_oopsi_forward(F,V,P);                       % forward step
     M = smc_oopsi_backward(S,V,P);                      % backward step
