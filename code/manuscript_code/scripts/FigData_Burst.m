@@ -12,7 +12,7 @@ clear, clc, fprintf('\nBurst Data Fig\n')
 %% 1) get data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-load '../data/D080218a.mat';
+load '../../data/D080218a.mat';
 j=21;                                               % experiment number
 
 % arrange stuff for plotting purposes
@@ -82,11 +82,11 @@ for m=Algs
     Sim.Alg = m;
     I{m}    = DataComp13(D{j}.F(1:Sim.T),P,Sim);
 end
-save BurstData
+% save BurstData
 
 %% 5) plot results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-load('BurstData.mat')
+% load('BurstData.mat')
 
 fig=figure(2); clf,
 if any(Algs==7) || any(Algs==9), nrows = numel(Algs)+2;
@@ -187,11 +187,11 @@ xlabel('Time (sec)','FontSize',fs)
 % print fig
 wh=[7 4];   %width and height
 set(fig,'PaperPosition',[0 11-wh(2) wh]);
-print('-depsc','BurstData')
+% print('-depsc','BurstData')
 
 %% 6) plot b&w results
 
-load('BurstData.mat')
+% load('BurstData.mat')
 
 fig=figure(3); clf,
 if any(Algs==7) || any(Algs==9), nrows = numel(Algs)+2;
@@ -300,4 +300,4 @@ xlabel('Time (sec)','FontSize',fs)
 % print fig
 wh=[7 4];   %width and height
 set(fig,'PaperPosition',[0 11-wh(2) wh]);
-print('-depsc','BurstData_bw')
+% print('-depsc','BurstData_bw')

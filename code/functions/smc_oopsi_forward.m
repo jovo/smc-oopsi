@@ -1,7 +1,7 @@
-function S = GOOPSI_forward_v1_0(Sim,F,P)
+function S = smc_oopsi_forward(F,V,P)
 % the function does the backwards sampling particle filter
 % notes: this function assumes spike histories are included.  to turn them
-% off, make sure that Sim.M=0 (M is the # of spike history terms).
+% off, make sure that V.Nspikehist=0 (M is the # of spike history terms).
 %
 % The backward sampler has standard variance, as approximated typically.
 % Each particle has the SAME backwards sampler, initialized at E[h_t]
@@ -11,136 +11,139 @@ function S = GOOPSI_forward_v1_0(Sim,F,P)
 % where e_t ~ N[0, gamma*f(C)+zeta]
 %
 % Inputs---
-% Sim:  simulation metadata
-% F:    fluorescence
-% P:    current parameter estimates
+% F: Fluorescence
+% V: Variables for algorithm to run
+% P: initial Parameter estimates
 %
 % Outputs---
-% S:    simulation states
+% S: simulation states
 
 %% allocate memory and initialize stuff
 
+fprintf('\nT = %g steps',V.T)
+fprintf('\nforward step:        ')
+P.kx        = P.k'*V.x;
+
 % extize particle info
-S.p     = zeros(Sim.N,Sim.T);                   % extize rate
-S.n     = false(Sim.N,Sim.T);                   % extize spike counts
-S.C     = P.C_init*ones(Sim.N,Sim.T);           % extize calcium
-S.F     = zeros(Sim.N,Sim.T);                   % extize fluorescence
-S.w_f   = 1/Sim.N*ones(Sim.N,Sim.T);            % extize forward weights
-S.w_b   = 1/Sim.N*ones(Sim.N,Sim.T);            % extize forward weights
-S.Neff  = 1/Sim.N*ones(1,Sim.T_o);              % extize N_{eff}
+S.p     = zeros(V.Nparticles,V.T);                  % extize rate
+S.n     = false(V.Nparticles,V.T);                  % extize spike counts
+S.C     = P.C_init*ones(V.Nparticles,V.T);          % extize calcium
+S.w_f   = 1/V.Nparticles*ones(V.Nparticles,V.T);    % extize forward weights
+S.w_b   = 1/V.Nparticles*ones(V.Nparticles,V.T);    % extize forward weights
+S.Neff  = 1/V.Nparticles*ones(1,V.T_o); 			% extize N_{eff}
 
 % preprocess stuff for stratified resampling
-ints        = linspace(0,1,Sim.N+1);            % generate intervals
-diffs       = ints(2)-ints(1);                  % generate interval size
-A.U_resamp  = repmat(ints(1:end-1),Sim.T_o,1)+diffs*rand(Sim.T_o,Sim.N); % resampling matrix
+ints        = linspace(0,1,V.Nparticles+1);         % generate intervals
+diffs       = ints(2)-ints(1);              		% generate interval size
+A.U_resamp  = repmat(ints(1:end-1),V.T_o,1)+diffs*rand(V.T_o,V.Nparticles); % resampling matrix
 
 % extize misc stuff
-A.U_sampl   = rand(Sim.N,Sim.T);                % random samples
-A.epsilon_c = sqrt(P.sig2_c)*randn(Sim.N,Sim.T);% generate noise on C
+A.U_sampl   = rand(V.Nparticles,V.T);               % random samples
+A.epsilon_c = sqrt(P.sig2_c)*randn(V.Nparticles,V.T);% generate noise on C
 
-if Sim.M>0                                      % if spike histories
-    S.h = zeros(Sim.N,Sim.T,Sim.M);             % extize spike history terms
-    A.epsilon_h = zeros(Sim.N, Sim.T, Sim.M);   % generate noise on h
-    for m=1:Sim.M                               % add noise to each h
-        A.epsilon_h(:,:,m) = sqrt(P.sig2_h(m))*randn(Sim.N,Sim.T);
+if V.Nspikehist>0                                   % if spike histories
+    S.h = zeros(V.Nparticles,V.T,V.Nspikehist);     % extize spike history terms
+    A.epsilon_h = zeros(V.Nparticles, V.T, V.Nspikehist); % generate noise on h
+    for m=1:V.Nspikehist                            % add noise to each h
+        A.epsilon_h(:,:,m) = sqrt(P.sig2_h(m))*randn(V.Nparticles,V.T);
     end
-else                                            % if not, comput P[n_t] for all t
-    S.p = repmat(1-exp(-exp(P.kx)*Sim.dt)',1,Sim.N)';
+else                                                % if not, comput P[n_t] for all t
+    S.p = repmat(1-exp(-exp(P.kx)*V.dt)',1,V.Nparticles)';
 end
 
 % extize stuff needed for conditional sampling
-A.n_sampl   = rand(Sim.N,Sim.T);                % generate random number to use for sampling n_t
-A.C_sampl   = rand(Sim.N,Sim.T);                % generate random number to use for sampling C_t
-A.oney      = ones(Sim.N,1);                    % vector of ones to call for various purposes to speed things up
-A.zeroy     = zeros(Sim.N,1);                   % vector of zeros
+A.n_sampl   = rand(V.Nparticles,V.T);       % generate random number to use for sampling n_t
+A.C_sampl   = rand(V.Nparticles,V.T);       % generate random number to use for sampling C_t
+A.oney      = ones(V.Nparticles,1);         % vector of ones to call for various purposes to speed things up
+A.zeroy     = zeros(V.Nparticles,1);        % vector of zeros
 
 % extize stuff needed for REAL backwards sampling
-O.p_o       = zeros(2^(Sim.freq-1),Sim.freq);   % extize backwards prob
-O.mu_o      = zeros(2^(Sim.freq-1),Sim.freq);   % extize backwards mean
-O.sig2_o    = zeros(1,Sim.freq);                % extize backwards variance
+O.p_o       = zeros(2^(V.freq-1),V.freq);   % extize backwards prob
+O.mu_o      = zeros(2^(V.freq-1),V.freq);   % extize backwards mean
+O.sig2_o    = zeros(1,V.freq);              % extize backwards variance
 
 % extize stuff needed for APPROX backwards sampling
-O.p         = zeros(Sim.freq,Sim.freq);         % extize backwards prob
-O.mu        = zeros(Sim.freq,Sim.freq);         % extize backwards mean
-O.sig2      = zeros(Sim.freq,Sim.freq);         % extize backwards var
+O.p         = zeros(V.freq,V.freq);         % extize backwards prob
+O.mu        = zeros(V.freq,V.freq);         % extize backwards mean
+O.sig2      = zeros(V.freq,V.freq);         % extize backwards var
 
 % initialize backwards distributions
-s           = Sim.freq;                         % initialize time of next observation
-O.p_o(1,s)  = 1;                                % initialize P[F_s | C_s]
+s           = V.freq;                       % initialize time of next observation
+O.p_o(1,s)  = 1;                            % initialize P[F_s | C_s]
 
 [O.mu_o(1,s) O.sig2_o(s)]  = init_lik(P,F(s));
 
-O.p(1,s)    = 1;                                % initialize P[F_s | C_s]
-O.mu(1,s)   = O.mu_o(1,s);                      % initialize mean of P[O_s | C_s]
-O.sig2(1,s) = O.sig2_o(s);                      % initialize var of P[O_s | C_s]
+O.p(1,s)    = 1;                            % initialize P[F_s | C_s]
+O.mu(1,s)   = O.mu_o(1,s);                  % initialize mean of P[O_s | C_s]
+O.sig2(1,s) = O.sig2_o(s);                  % initialize var of P[O_s | C_s]
 
-if Sim.freq>1                                   % if intermitent sampling
-    for tt=s:-1:2                                 % generate spike binary matrix
+if V.freq>1                                 % if intermitent sampling
+    for tt=s:-1:2                           % generate spike binary matrix
         A.spikemat(:,tt-1) = repmat([repmat(0,1,2^(s-tt)) repmat(1,1,2^(s-tt))],1,2^(tt-2))';
     end
-    nspikes = sum(A.spikemat')';                  % count number of spikes at each time step
+    nspikes = sum(A.spikemat')';            % count number of spikes at each time step
 
-    for n=0:Sim.freq-1
-        A.ninds{n+1}= find(nspikes==n);             % get index for each number of spikes
-        A.lenn(n+1) = length(A.ninds{n+1});         % find how many spikes
+    for n=0:V.freq-1
+        A.ninds{n+1}= find(nspikes==n);     % get index for each number of spikes
+        A.lenn(n+1) = length(A.ninds{n+1}); % find how many spikes
     end
 end
 
-O = update_moments(Sim,F,P,S,O,A,s);            % recurse back to get P[O_s | C_s] before the first observation
+O = update_moments(V,F,P,S,O,A,s);          % recurse back to get P[O_s | C_s] before the first observation
 
 %% do the particle filter
 
-for t=Sim.freq+1:Sim.T-Sim.freq
-    if Sim.pf==0 || (F(s+Sim.freq)-P.beta)/P.alpha>0.98 ||(F(s+Sim.freq)-P.beta)/P.alpha<0
-        S = prior_sampler(Sim,F,P,S,A,t);       % use prior sampler when gaussian approximation is not good
-    else                                      % otherwise use conditional sampler
-        S = cond_sampler(Sim,F,P,S,O,A,t,s);
+for t=V.freq+1:V.T-V.freq
+    if V.condsamp==0 || (F(s+V.freq)-P.beta)/P.alpha>0.98 ||(F(s+V.freq)-P.beta)/P.alpha<0
+        S = prior_sampler(V,F,P,S,A,t);     % use prior sampler when gaussian approximation is not good
+    else                                    % otherwise use conditional sampler
+        S = cond_sampler(V,F,P,S,O,A,t,s);
     end
 
-    S.C(:,t)=S.next_C;                        % done to speed things up for older
-    S.n(:,t)=S.next_n;                        % matlab, having issues with from-function
-    if(isfield(S,'next_w_f'))                 % update calls to large structures
+    S.C(:,t)=S.next_C;                      % done to speed things up for older
+    S.n(:,t)=S.next_n;                      % matlab, having issues with from-function
+    if(isfield(S,'next_w_f'))               % update calls to large structures
         S.w_f(:,t)=S.next_w_f;
     else
         S.w_f(:,t)=S.w_f(:,t-1);
     end
 
-    if(Sim.M>0)                               % update S.h & S.p
-        for m=1:Sim.M S.h(:,t,m)=S.h_new(:,1,m); end
+    if V.Nspikehist>0                                % update S.h & S.p
+        for m=1:V.Nspikehist, S.h(:,t,m)=S.h_new(:,1,m); end
         S.p(:,t)=S.p_new;
     end
 
     % at observations
-    if mod(t,Sim.freq)==0
+    if mod(t,V.freq)==0
         % STRAT_RESAMPLE -- THIS WAS CAUSING TROUBLE IN OLDER MATLAB WITH
         % MANAGING LARGE ARRAYS IN S-STRUCTURE WITHIN THE FUNCTION CALL
-        % S = strat_resample(Sim,S,t,A.U_resamp); % stratified resample
+        % S = strat_resample(V,S,t,A.U_resamp); % stratified resample
 
-        Nresamp=t/Sim.freq;                         % increase sample counter
-        S.Neff(Nresamp)  = 1/sum(S.w_f(:,t).^2);    % store N_{eff}
+        Nresamp=t/V.freq;                                       % increase sample counter
+        S.Neff(Nresamp)  = 1/sum(S.w_f(:,t).^2);                % store N_{eff}
 
         % if weights are degenerate or we are doing prior sampling then resample
-        if S.Neff(Nresamp) < Sim.N/2 || Sim.pf==0
+        if S.Neff(Nresamp) < V.Nparticles/2 || V.condsamp==0
             [foo,ind]   = histc(A.U_resamp(Nresamp,:),[0  cumsum(S.w_f(:,t))']);
-            [ri,ri]     = sort(rand(Sim.N,1));      % these 3 lines stratified resample
+            [ri,ri]     = sort(rand(V.Nparticles,1));                    % these 3 lines stratified resample
             ind         = ind(ri);
 
-            S.p(:,t-Sim.freq+1:t)   = S.p(ind,t-Sim.freq+1:t);      % resample probabilities (necessary?)
-            S.n(:,t-Sim.freq+1:t)   = S.n(ind,t-Sim.freq+1:t);      % resample calcium
-            S.C(:,t-Sim.freq+1:t)   = S.C(ind,t-Sim.freq+1:t);      % resample calcium
-            S.w_f(:,t-Sim.freq+1:t) = 1/Sim.N*ones(Sim.N,Sim.freq); % reset weights
-            if Sim.M>0                                              % if spike history terms
-                S.h(:,t-Sim.freq+1:t,:) = S.h(ind,t-Sim.freq+1:t,:);% resample all h's
+            S.p(:,t-V.freq+1:t)   = S.p(ind,t-V.freq+1:t);      % resample probabilities (necessary?)
+            S.n(:,t-V.freq+1:t)   = S.n(ind,t-V.freq+1:t);      % resample calcium
+            S.C(:,t-V.freq+1:t)   = S.C(ind,t-V.freq+1:t);      % resample calcium
+            S.w_f(:,t-V.freq+1:t) = 1/V.Nparticles*ones(V.Nparticles,V.freq); % reset weights
+            if V.Nspikehist>0                                   % if spike history terms
+                S.h(:,t-V.freq+1:t,:) = S.h(ind,t-V.freq+1:t,:);% resample all h's
             end
         end %function
 
-        O = update_moments(Sim,F,P,S,O,A,t);    % estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
-        s = t;                                  % store time of last observation
+        O = update_moments(V,F,P,S,O,A,t);                      % estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
+        s = t;                                                  % store time of last observation
 
     end
 
     if mod(t,100)==0
-        if t<1000                               % print # of observations
+        if t<1000                                               % print # of observations
             fprintf('\b\b\b%d',t)
         elseif t<10000
             fprintf('\b\b\b\b%d',t)
@@ -190,10 +193,10 @@ end %init_lik
 
 %% update moments
 
-function O = update_moments(Sim,F,P,S,O,A,t)
+function O = update_moments(V,F,P,S,O,A,t)
 %%%% maybe make a better proposal for epi
 
-s           = Sim.freq;                 % find next observation time
+s           = V.freq;                   % find next observation time
 
 [mu1 sig1]  = init_lik(P,F(t+s));
 
@@ -204,27 +207,27 @@ O.p(1,s)    = 1;                        % initialize P[F_s | C_s]
 O.mu(1,s)   = mu1;                      % initialize mean of P[O_s | C_s]
 O.sig2(1,s) = sig1;                     % initialize var of P[O_s | C_s]
 
-if Sim.M>0
-    hhat        = zeros(Sim.freq,Sim.M);% extize hhat
-    phat        = zeros(1,Sim.freq+1);  % extize phat
+if V.Nspikehist>0
+    hhat        = zeros(V.freq,V.Nspikehist);                   % extize hhat
+    phat        = zeros(1,V.freq+1);                            % extize phat
 
-    hs          = S.h(:,t,:);           % this is required for matlab to handle a m-by-n-by-p matrix
-    h(:,1:Sim.M)= hs(:,1,1:Sim.M);      % this too
-    hhat(1,:)   = sum(repmat(S.w_f(:,t),1,Sim.M).*h,1); % initialize hhat
-    phat(1)     = sum(S.w_f(:,t).*S.p(:,t),1);          % initialize phat
+    hs          = S.h(:,t,:);                                   % this is required for matlab to handle a m-by-n-by-p matrix
+    h(:,1:V.Nspikehist)= hs(:,1,1:V.Nspikehist);                % this too
+    hhat(1,:)   = sum(repmat(S.w_f(:,t),1,V.Nspikehist).*h,1);  % initialize hhat
+    phat(1)     = sum(S.w_f(:,t).*S.p(:,t),1);                  % initialize phat
 end
 
-if Sim.M>0
+if V.Nspikehist>0
     for tt=1:s
         % update hhat
-        for m=1:Sim.M                   % for each spike history term
+        for m=1:V.Nspikehist                                    % for each spike history term
             hhat(tt+1,m)=P.g(m)*hhat(tt,m)+phat(tt);
         end
-        y_t         = P.kx(tt+t)+P.omega'*hhat(tt+1,:)';% input to neuron
-        phat(tt+1)  = 1-exp(-exp(y_t)*Sim.dt);          % update phat
+        y_t         = P.kx(tt+t)+P.omega'*hhat(tt+1,:)';        % input to neuron
+        phat(tt+1)  = 1-exp(-exp(y_t)*V.dt);                    % update phat
     end
 else
-    phat  = 1-exp(-exp(P.kx(t+1:t+s)')*Sim.dt);         % update phat
+    phat  = 1-exp(-exp(P.kx(t+1:t+s)')*V.dt);                   % update phat
 end
 
 for tt=s:-1:2
@@ -259,30 +262,34 @@ O.p=O.p+eps; % such that there are no actual zeros
 end %function UpdateMoments
 
 %% particle filtering using the prior sampler
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function S = prior_sampler(Sim,F,P,S,A,t)
 
-if Sim.M>0                                  % update noise on h
-    S.h_new=zeros(size(S.n,1),1,Sim.M);
+function S = prior_sampler(V,F,P,S,A,t)
 
-    for m=1:Sim.M
+if V.Nspikehist>0                                % update noise on h
+    S.h_new=zeros(size(S.n,1),1,V.Nspikehist);
+
+    for m=1:V.Nspikehist
         S.h_new(:,1,m)=P.g(m)*S.h(:,t-1,m)+S.n(:,t-1)+A.epsilon_h(:,t,m);
     end
 
     % update rate and sample spikes
-    hs              = S.h_new;              % this is required for matlab to handle a m-by-n-by-p matrix
-    h(:,1:Sim.M)    = hs(:,1,1:Sim.M);      % this too
-    y_t             = P.kx(t)+P.omega'*h';  % input to neuron
-    S.p_new         = 1-exp(-exp(y_t)*Sim.dt);  % update rate for those particles with y_t<0
-    S.p_new         = S.p_new(:);
+    hs          = S.h_new;              % this is required for matlab to handle a m-by-n-by-p matrix
+    h(:,1:V.Nspikehist)  = hs(:,1,1:V.Nspikehist);        % this too
+    y_t         = P.kx(t)+P.omega'*h';  % input to neuron
+    S.p_new     = 1-exp(-exp(y_t)*V.dt);% update rate for those particles with y_t<0
+    S.p_new     = S.p_new(:);
 else
-    S.p_new         = S.p(:,t);
+    S.p_new     = S.p(:,t);
 end
-S.next_n        = A.U_sampl(:,t)<S.p_new;   % sample n
+if ~V.use_true_n
+    S.next_n    = A.U_sampl(:,t)<S.p_new;   % sample n
+else
+    S.next_n    = V.true_n;
+end
 S.next_C        = (1-P.a)*S.C(:,t-1)+P.A*S.next_n+P.a*P.C_0+A.epsilon_c(:,t);% sample C
 
 % get weights at every observation          %THIS NEEDS FIX FOR EPI DATA
-if mod(t,Sim.freq)==0
+if mod(t,V.freq)==0
     S_mu        = Hill_v1(P,S.next_C);
     F_mu        = P.alpha*S_mu+P.beta;      % compute E[F_t]
     F_var       = P.gamma*S_mu+P.zeta;      % compute V[F_t]
@@ -298,38 +305,38 @@ end
 end
 
 %% particle filtering using the CONDITIONAL sampler
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function S = cond_sampler(Sim,F,P,S,O,A,t,s)
+
+function S = cond_sampler(V,F,P,S,O,A,t,s)
 
 % if spike histories, sample h and update p
-if Sim.M>0                                  % update noise on h
-    S.h_new=zeros(size(S.n,1),1,Sim.M);
-    for m=1:Sim.M                           % for each spike history term
+if V.Nspikehist>0                                    % update noise on h
+    S.h_new=zeros(size(S.n,1),1,V.Nspikehist);
+    for m=1:V.Nspikehist                             % for each spike history term
         S.h_new(:,1,m)=P.g(m)*S.h(:,t-1,m)+S.n(:,t-1)+A.epsilon_h(:,t,m);
     end
     hs              = S.h_new;              % this is required for matlab to handle a m-by-n-by-p matrix
-    h(:,1:Sim.M)    = hs(:,1,1:Sim.M);      % this too
-    S.p_new         = 1-exp(-exp(P.kx(t)+P.omega'*h')*Sim.dt);% update p
+    h(:,1:V.Nspikehist)      = hs(:,1,1:V.Nspikehist);        % this too
+    S.p_new         = 1-exp(-exp(P.kx(t)+P.omega'*h')*V.dt);% update p
     S.p_new         = S.p_new(:);
 else
     S.p_new         = S.p(:,t);
 end
 
 % compute P[n_k | h_k]
-ln_n    = [log(S.p_new) log(1-S.p_new)];  % compute [log(spike) log(no spike)]
+ln_n    = [log(S.p_new) log(1-S.p_new)];    % compute [log(spike) log(no spike)]
 
 % compute log G_n(n_k | O_s) for n_k=1 and n_k=0
-k   = Sim.freq-(t-s)+1;
+k   = V.freq-(t-s)+1;
 
 m0  = (1-P.a)*S.C(:,t-1)+P.a*P.C_0;         % mean of P[C_k | C_{t-1}, n_k=0]
 m1  = (1-P.a)*S.C(:,t-1)+P.A+P.a*P.C_0;     % mean of P[C_k | C_{t-1}, n_k=1]
 
 m2  = O.mu(1:k,t-s);                        % mean of P[O_s | C_k] for n_k=1 and n_k=0
 v2  = O.sig2(1:k,t-s);                      % var of P[O_s | C_k] for n_k=1 and n_k=0
-v   = repmat(P.sig2_c+v2',Sim.N,1);         % var of G_n(n_k | O_s) for n_k=1 and n_k=0
+v   = repmat(P.sig2_c+v2',V.Nparticles,1);           % var of G_n(n_k | O_s) for n_k=1 and n_k=0
 
-ln_G0= -0.5*log(2*pi.*v)-.5*(repmat(m0,1,k)-repmat(m2',Sim.N,1)).^2./v;   % log G_n(n_k | O_s) for n_k=1 and n_k=0
-ln_G1= -0.5*log(2*pi.*v)-.5*(repmat(m1,1,k)-repmat(m2',Sim.N,1)).^2./v;   % log G_n(n_k | O_s) for n_k=1 and n_k=0
+ln_G0= -0.5*log(2*pi.*v)-.5*(repmat(m0,1,k)-repmat(m2',V.Nparticles,1)).^2./v;   % log G_n(n_k | O_s) for n_k=1 and n_k=0
+ln_G1= -0.5*log(2*pi.*v)-.5*(repmat(m1,1,k)-repmat(m2',V.Nparticles,1)).^2./v;   % log G_n(n_k | O_s) for n_k=1 and n_k=0
 
 mx  = max(max(ln_G0,[],2),max(ln_G1,[],2))';% get max of these
 mx  = repmat(mx,k,1)';
@@ -355,14 +362,14 @@ sp      = S.next_n==1;                      % store index of which samples spike
 nosp    = S.next_n==0;                      % and which did not
 
 % sample C
-if mod(t,Sim.freq)==0                       % if not intermittent
-    v       = repmat(O.sig2(1,t-s),Sim.N,1);% get var
-    m       = repmat(O.mu(1,t-s),Sim.N,1);  % get mean
+if mod(t,V.freq)==0                         % if not intermittent
+    v       = repmat(O.sig2(1,t-s),V.Nparticles,1);  % get var
+    m       = repmat(O.mu(1,t-s),V.Nparticles,1);    % get mean
 else                                        % if intermittent, sample from mixture
     % first sample component
-    if(isempty(find(sp))) sp_i=[];          % handler for empty spike trains
+    if(isempty(find(sp,1))), sp_i=[];       % handler for empty spike trains
     else [fo,sp_i]   = histc(A.C_sampl(sp,t),[0  cumsum(O.p(1:k-1,t-s))'/sum(O.p(1:k-1,t-s))]); end
-    if(isempty(find(nosp))) nosp_i=[];      % handle for saturated spike trains
+    if(isempty(find(nosp,1))), nosp_i=[];   % handle for saturated spike trains
     else [fo,nosp_i] = histc(A.C_sampl(nosp,t),[0  cumsum(O.p(1:k,t-s))'/sum(O.p(1:k,t-s))]); end
 
     v       = O.sig2(1:k,t-s);              % get var of each component
@@ -378,17 +385,17 @@ m_c         = v_c.*(m./v+((1-P.a)*S.C(:,t-1)+P.A*S.next_n+P.a*P.C_0)/P.sig2_c);%
 S.next_C    = normrnd(m_c,sqrt(v_c));       % sample C
 
 % update weights
-if mod(t,Sim.freq)==0                       % at observations compute P(O|H)
+if mod(t,V.freq)==0                         % at observations compute P(O|H)
     S_mu        = Hill_v1(P,S.next_C);
-    if Sim.Scan==0                          % when doing epi, also add previous time steps
+    if V.scan==0                            % when doing epi, also add previous time steps
         for tt=s+1:t-1, S_mu=S_mu+Hill_v1(P,S.C(s+tt)); end
     end
     F_mu        = P.alpha*S_mu+P.beta;      % compute E[F_t]
     F_var       = P.gamma*S_mu+P.zeta;      % compute V[F_t]
     %%%% log_PO_H must change for epi
-    log_PO_H    = -0.5*(F(t)-F_mu).^2./F_var - log(F_var)/2;    % compute log of weights
+    log_PO_H    = -0.5*(F(t)-F_mu).^2./F_var - log(F_var)/2; % compute log of weights
 else                                        % when no observations are present, P[O|H^{(i)}] are all equal
-    log_PO_H    = (1/Sim.N)*A.oney;
+    log_PO_H    = (1/V.Nparticles)*A.oney;
 end
 log_n           = A.oney;                   % extize log sampling spikes
 log_n(sp)       = log(S.p_new(sp));         % compute log P(spike)
@@ -406,8 +413,8 @@ sum_logs        = log_quotient+log(S.w_f(:,t-1));   % update log(weights)
 w               = exp(sum_logs-max(sum_logs));      % exponentiate log(weights)
 S.next_w_f      = w./sum(w);                        % normalize such that they sum to unity
 
-if any(isnan(w)), Fs=1024; ts=0:1/Fs:1; sound(sin(2*pi*ts*200)), 
-    warning('some weights are NaN') 
-    keyboard, 
+if any(isnan(w)), Fs=1024; ts=0:1/Fs:1; sound(sin(2*pi*ts*200)),
+    warning('smc:weights','some weights are NaN')
+    keyboard,
 end
 end %condtional sampler
