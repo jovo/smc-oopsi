@@ -27,10 +27,10 @@ if V.est_c==1
     fprintf('\nsig    = %.2f',P.sigma_c)
     fprintf('\nalpha  = %.2f',P.alpha)
     fprintf('\nbeta   = %.2f',P.beta)
-    fprintf('\ngamma  = %.2g',P.gamma)
+    fprintf('\ngamma  = %.2g\n',P.gamma)
 end
 if V.est_n == true
-    fprintf('\nk      = %.2f',P.k)
+    fprintf('\nk      = %.2f\n',P.k)
 end
 
 % plot lik and inferrence
