@@ -64,9 +64,11 @@ if ~isfield(P,'beta'),  P.beta  = min(F);       end     % offset of F
 if ~isfield(P,'zeta'),  P.zeta  = P.alpha/5;    end     % constant variance
 if ~isfield(P,'gamma'), P.gamma = P.zeta/5;     end     % scaled variance
 if V.Nspikehist==1                                               % if there are spike history terms
-    if ~isfield(P,'omega'),   P.omega   = -1;   end     % weight
-    if ~isfield(P,'tau_h'),   P.tau_h   = 0.02; end     % time constant
-    if ~isfield(P,'sigma_h'), P.sigma_h = 0;    end     % stan dev of noise
+    if ~isfield(P,'omega'),     P.omega     = -1;   end     % weight
+    if ~isfield(P,'tau_h'),     P.tau_h     = 0.02; end     % time constant
+    if ~isfield(P,'sigma_h'),   P.sigma_h   = 0;    end     % stan dev of noise
+    if ~isfield(P,'g'),         P.g         = V.dt/P.tau_h; end     % for brevity
+    if ~isfield(P,'sig2_h'),    P.sig2_h    = P.sigma_h^2*V.dt; end % for brevity
 end
 if ~isfield(P,'a'),     P.a     = V.dt/P.tau_c; end     % for brevity
 if ~isfield(P,'sig2_c'),P.sig2_c= P.sigma_c^2*V.dt; end % for brevity

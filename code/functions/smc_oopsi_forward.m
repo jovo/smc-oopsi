@@ -221,7 +221,7 @@ if V.Nspikehist>0
     for tt=1:s
         % update hhat
         for m=1:V.Nspikehist                                    % for each spike history term
-            hhat(tt+1,m)=P.g(m)*hhat(tt,m)+phat(tt);
+            hhat(tt+1,m)=(1-P.g(m))*hhat(tt,m)+phat(tt);
         end
         y_t         = P.kx(tt+t)+P.omega'*hhat(tt+1,:)';        % input to neuron
         phat(tt+1)  = 1-exp(-exp(y_t)*V.dt);                    % update phat
@@ -269,7 +269,7 @@ if V.Nspikehist>0                                % update noise on h
     S.h_new=zeros(size(S.n,1),1,V.Nspikehist);
 
     for m=1:V.Nspikehist
-        S.h_new(:,1,m)=P.g(m)*S.h(:,t-1,m)+S.n(:,t-1)+A.epsilon_h(:,t,m);
+        S.h_new(:,1,m)=(1-P.g(m))*S.h(:,t-1,m)+S.n(:,t-1)+A.epsilon_h(:,t,m);
     end
 
     % update rate and sample spikes
@@ -312,7 +312,7 @@ function S = cond_sampler(V,F,P,S,O,A,t,s)
 if V.Nspikehist>0                                    % update noise on h
     S.h_new=zeros(size(S.n,1),1,V.Nspikehist);
     for m=1:V.Nspikehist                             % for each spike history term
-        S.h_new(:,1,m)=P.g(m)*S.h(:,t-1,m)+S.n(:,t-1)+A.epsilon_h(:,t,m);
+        S.h_new(:,1,m)=(1-P.g(m))*S.h(:,t-1,m)+S.n(:,t-1)+A.epsilon_h(:,t,m);
     end
     hs              = S.h_new;              % this is required for matlab to handle a m-by-n-by-p matrix
     h(:,1:V.Nspikehist)      = hs(:,1,1:V.Nspikehist);        % this too
