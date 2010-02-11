@@ -83,15 +83,15 @@ end
             RateParams=E.k;                                     % vector of parameters to estimate (changes depending on user input of which parameters to estimate)
             sp      = S.n==1;                                   % find (particles,time step) pairs that spike
             nosp    = S.n==0;                                   % don't spike
-            x       = repmat(V.x,1,V.Nparticles);                        % generate matrix for gradinent
+%             x       = repmat(V.x,1,V.Nparticles);                        % generate matrix for gradinent
             zeroy   = zeros(V.Nparticles,V.T);                           % make matrix of zeros for evaluating lik
 
             if V.est_h == true
                 if V.Nspikehist>0                                        % if spike history terms are present
                     RateParams=[RateParams; E.omega];           % also estimate omega
-                    for i=1:V.Nspikehist                                 % and modify stimulus matrix for gradient
-                        x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.Nparticles*V.T);
-                    end
+%                     for i=1:V.Nspikehist                                 % and modify stimulus matrix for gradient
+%                         x(V.StimDim+i,:)=reshape(S.h(:,:,i),1,V.Nparticles*V.T);
+%                     end
                 end
 
                 %[bko lik_r] = fminunc(@f_bko,RateParams,optionsGLM);% find MLE
