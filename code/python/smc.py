@@ -69,7 +69,7 @@ class Parameters(object):
                  sigma_c = 0.1,
                  n=1.,
                  k_d = 200.,
-                 k = 0.0001,
+                 k = 0.001,
                  alpha=None,
                  beta=None, 
                  zeta=None,
@@ -142,4 +142,33 @@ class Parameters(object):
 
 class States(object):
     """ states of the model"""
+    def __init__(self, vars, pars):
+        '''
+        set up the states. 
+        @param vars: instance of a Variables object
+        @param pars: instance of a Parameters object  
+        '''
+        self.p = numpy.zeros((vars.Nparticles, vars.T)) #rate
+        n = numpy.zeros((V.Nparticles, V.T))
+        self.n = n.astype('bool')     #spike counts
+        self.C = P.C_init * numpy.ones((V.Nparticles, V.T)) #calcium -- probably to be rao-blackwellized away tho!
+        self.w_f = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T))) #forward particle weights
+        self.w_b = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T))) #backward particle weights
+        
+        #note: i think we shouldn't need this, but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
+        #self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T_o))  
+
+def forward(variables, parameters):
+    '''
+    the model is F_t = f(C) = alpha C^n/(C^n + k_d) + beta + e_t,
+    where e_t ~ N[0, gamma*f(C)+zeta]
+    
+    @param variables: instance of a variables object 
+    @param parameters: instance of a parameters object 
+    
+    @return: instance of a States object  (simulation states)
+    '''
+    pass
+
+def backward():
     pass
