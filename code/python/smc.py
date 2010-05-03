@@ -69,7 +69,7 @@ class Parameters(object):
                  sigma_c = 0.1,
                  n=1.,
                  k_d = 200.,
-                 k = 0.001,
+                 k = None,
                  alpha=None,
                  beta=None, 
                  zeta=None,
@@ -115,7 +115,9 @@ class Parameters(object):
         self.sigma_c = sigma_c
         self.n=n
         self.k_d = k_d
-        self.k = k
+        if(k==None): self.k = .001
+        else: self.k = k
+        self.kx = self.k*V.x; #we'll have to fix this to allow k to be non-scalar. later. 
         if(alpha==None): self.alpha = numpy.mean(V.F)
         else: self.alpha = alpha
         if(beta==None): self.beta = min(V.F)
@@ -155,7 +157,8 @@ class States(object):
         self.w_f = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T))) #forward particle weights
         self.w_b = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T))) #backward particle weights
         
-        #note: i think we shouldn't need this, but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
+        #note: i think we shouldn't need this, or it shouldn't be a function of T_o, which we've gotten rid of. 
+        # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
         #self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T_o))  
 
 def forward(variables, parameters):
