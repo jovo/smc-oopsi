@@ -139,8 +139,44 @@ class Parameters(object):
         else: self.sig2_c = sig2_c
                  
         
+class Memoized(object):
+    ''' creates and holds some convenience vectors and matrices that we'll reuse a lot.  
+    '''
+    def __init(self, vars):
+        '''
+        sets it up. 
+        @param vars: a Variables object.  
+        '''
+        self.n_sampl = numpy.random.uniform(size = (vars.Nparticles, vars.T))
+        self.C_sampl = numpy.random.uniform(vars.Nparticles, vars.T)
+        self.oney = numpy.ones((vars.Nparticles, 1))
+        self.zeroy = numpy.zeros((vars.Nparticles, 1))
 
-
+class ObsLik(object):
+    '''
+    holds the observation likelihood parameters
+    '''
+    def __init__(self, vars, pars):
+        '''
+        initializes the likelihoods.
+        @param vars: a Variables object 
+        @param pars: a Parameters object 
+        '''
+        self.p_o = numpy.zeros(2,1)
+        self.mu_o = numpy.zeros(2,1)
+        self.sig2_o = numpy.zeros(1)
+        self.p =  numpy.zeros(1)
+        self.mu = numpy.zeros(1)
+        self.sig2 = numpy.zeros(1)
+        self.s = 1
+        self.init_like(pars, vars.F(0))
+        
+    def init_lik(self, pars, initFluo):
+        '''
+        haven't gotten here yet.
+        '''
+        pass
+        
 
 class States(object):
     """ states of the model"""
@@ -161,17 +197,18 @@ class States(object):
         # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
         #self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T_o))  
 
-def forward(variables, parameters):
+def forward(vars, pars):
     '''
     the model is F_t = f(C) = alpha C^n/(C^n + k_d) + beta + e_t,
     where e_t ~ N[0, gamma*f(C)+zeta]
     
-    @param variables: instance of a variables object 
-    @param parameters: instance of a parameters object 
+    @param vars: instance of a variables object 
+    @param pars: instance of a parameters object 
     
     @return: instance of a States object  (simulation states)
     '''
-    pass
+    A = Memoized(vars)
+    
 
 def backward():
     pass
