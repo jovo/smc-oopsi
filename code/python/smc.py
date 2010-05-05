@@ -25,17 +25,16 @@ class Variables(object):
         @param x=None:   stimulus (zeros vector of length T that has 1s in the frames that have high spike likelihood)
         @param name='oopy': name for plots/figures
         @param Nparticles=99: number of particles
-        @param Nspikehist=0: # number of spike history terms
-        @param condsamp=True: #use conditional sampler?
-        @param true_n = None:   #true spikes, if available
-        @param smc_iter_max = 3: # max number of iterations
-        @param est_c = True: # do we estimate tau_c, A, C_0?
-        @param est_t = True: # do we estimate tau_c?
-        @param est_n = True: # b,k
-        @param est_h = True: #w
-        @param est_F = True: #alpha, beta
-        @param showGraphs = True: #show graphical results as we go
-         
+        @param Nspikehist=0:  number of spike history terms
+        @param condsamp=True: use conditional sampler?
+        @param true_n = None:   true spikes, if available
+        @param smc_iter_max = 3:  max number of iterations
+        @param est_c = True: do we estimate tau_c, A, C_0?
+        @param est_t = True: do we estimate tau_c?
+        @param est_n = True: b,k
+        @param est_h = True: w
+        @param est_F = True: alpha, beta
+        @param showGraphs = True: show graphical results as we go
         """
        
         self.F = F
@@ -170,12 +169,29 @@ class ObsLik(object):
         self.sig2 = numpy.zeros(1)
         self.s = 1
         self.init_like(pars, vars.F(0))
+        self.V = vars
+        self.P = pars
         
-    def init_lik(self, pars, initFluo):
+    def init_lik(self):
         '''
-        haven't gotten here yet.
+        get the mean (mu1) and variance (sig1) for P[C_t | F_t]
         '''
-        pass
+        F = self.V.F #for brevity
+        P = self.P   #for brevity
+        
+        finv = numpy.power( ((P.k_d * (F-P.beta)) / (P.alpha - F + P.beta)),
+                            1/P.n)
+        
+        mu1 = finv #copying josh's variable names
+        if( mu1 > 0 and numpy.imag(mu1)==0):
+            pass
+            #sig1=-1/(-(-P.alpha*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)+P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)+2*(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2*(-P.alpha*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)+P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)-(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)*(-P.alpha*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)+P.alpha*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)+3*P.alpha*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2-2*P.alpha*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2-P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)-(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^3*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2+1/2*(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2*(P.gamma*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)-P.gamma*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)-3*P.gamma*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2+2*P.gamma*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2+P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)-1/2*(P.gamma*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)-P.gamma*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)-3*P.gamma*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2+2*P.gamma*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2+P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)+1/2*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2);
+        else:
+            self.mu1 = 0
+            self.sig1 = 0
+
+            
+                            
         
 
 class States(object):
