@@ -167,7 +167,7 @@ class ObsLik(object):
         self.p =  numpy.zeros(1)
         self.mu = numpy.zeros(1)
         self.sig2 = numpy.zeros(1)
-        self.s = 1
+        self.s = 1  # s = v.freq = "intermittent observation frequency". it's always going to be 1 for a while.
         self.init_like(pars, vars.F(0))
         self.V = vars
         self.P = pars
@@ -189,6 +189,27 @@ class ObsLik(object):
         else:
             self.mu1 = 0
             self.sig1 = 0
+            
+    def update_moments(self, A, states, t):
+        '''
+        @param A: A Memoized instance 
+        @param states: States instance
+        @param t: current frame or timestep  
+        '''
+        S = states #give me convenience or give me death!
+        P = self.P
+        
+        #skipping a line where we'd be setting mu1 and sig1 from init_lik .. 
+        self.p[0] = 1
+        #if we had called init_like we'd now be propagating those vals into self.[mu,sig2]
+        
+        #two blocks for spike histories
+        
+        phat  = 1-numpy.exp(-numpy.exp(P.kx(t+1:t+s)')*V.dt);  
+        
+        
+        
+         
 
             
                             
@@ -224,6 +245,19 @@ def forward(vars, pars):
     @return: instance of a States object  (simulation states)
     '''
     A = Memoized(vars)
+    S = States(vars, pars)
+    #skipping the spike history stuff, but it would go roughly here-ish, and in some __init__s. 
+    O = Obslik(vars, pars)
+    
+    O.p[0] = 1
+    O.mu[0] = O.mu_o[0]
+    O.sig2[0] = O.sig2_o[0]
+    
+    #skipping another V.freq block
+    
+    O.update_moments(A,S,0)
+        
+    
     
 
 def backward():
