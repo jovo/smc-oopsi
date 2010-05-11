@@ -141,15 +141,26 @@ class Parameters(object):
 class Memoized(object):
     ''' creates and holds some convenience vectors and matrices that we'll reuse a lot.  
     '''
-    def __init(self, vars):
+    def __init(self, vars, pars):
         '''
         sets it up. 
         @param vars: a Variables object.  
         '''
         self.n_sampl = numpy.random.uniform(size = (vars.Nparticles, vars.T))
-        self.C_sampl = numpy.random.uniform(vars.Nparticles, vars.T)
+        self.C_sampl = numpy.random.uniform(size=(vars.Nparticles, vars.T))
         self.oney = numpy.ones((vars.Nparticles, 1))
         self.zeroy = numpy.zeros((vars.Nparticles, 1))
+        self.U_sampl = numpy.random.uniform(size=(vars.Nparticles, vars.T))
+        diffs = 1
+        ints = numpy.array(range(0,vars.Nparticles,diffs))
+        self.U_resamp = ints+ diffs*numpy.random.uniform(size = (1,vars.Nparticles))
+        
+#here's the original code,  and ints was to Nparticles+1. 
+#so instead, take ints only to Nparticles, 
+#and since V.T_o is 1, we're tiling exactly once, so no more repmat
+#A.U_resamp  = repmat(ints(1:end-1),V.T_o,1)+diffs*rand(V.T_o,V.Nparticles); % resampling matrix
+
+        self.epsilon_c = numpy.sqrt(pars.sig2_c) * numpy.random.normal(size=(vars.Nparticles, vars.T))
 
 class ObsLik(object):
     '''
@@ -198,6 +209,7 @@ class ObsLik(object):
         '''
         S = states #give me convenience or give me death!
         P = self.P
+        V = self.V
         
         #skipping a line where we'd be setting mu1 and sig1 from init_lik .. 
         self.p[0] = 1
@@ -205,8 +217,32 @@ class ObsLik(object):
         
         #two blocks for spike histories
         
-        phat  = 1-numpy.exp(-numpy.exp(P.kx(t+1:t+s)')*V.dt);  
+        phat  = 1-numpy.exp(-numpy.exp(P.kx[t+1])*V.dt)  #if k, kx are non-scalar, then the inner term becomes -numpy.exp( p.kx[t+1).T * V.dt
         
+        #an intermittent sampling for loop: tt=s:-1:2
+        
+        #ok but we must need this code!
+        
+#        for tt=s:-1:2
+#    O.p_o(1:2^(s-tt+1),tt-1)    = repmat(O.p_o(1:2^(s-tt),tt),2,1).*[(1-phat(tt))*ones(1,2^(s-tt)) phat(tt)*ones(1,2^(s-tt))]';
+#    O.mu_o(1:2^(s-tt+1),tt-1)   = (1-P.a)^(-1)*(repmat(O.mu_o(1:2^(s-tt),tt),2,1)-P.A*A.spikemat(1:2^(s-tt+1),tt-1)-P.a*P.C_0);     %mean of P[O_s | C_k]
+#    O.sig2_o(tt-1)              = (1-P.a)^(-2)*(P.sig2_c+O.sig2_o(tt)); % var of P[O_s | C_k]
+#
+#    for n=0:s-tt+1
+#        nind=A.ninds{n+1};
+#        O.p(n+1,tt-1)   = sum(O.p_o(nind,tt-1));
+#        ps          = (O.p_o(nind,tt-1)/O.p(n+1,tt-1))';
+#        O.mu(n+1,tt-1)  = ps*O.mu_o(nind,tt-1);
+#        O.sig2(n+1,tt-1)= O.sig2_o(tt-1) + ps*(O.mu_o(nind,tt-1)-repmat(O.mu(n+1,tt-1)',A.lenn(n+1),1)).^2;
+#    end
+#end
+        
+        #if s== 2 , another intermittent sampling block 
+        
+        #the while loop to get rid of NaN : 
+        #python/numpy doesn't seem to allow assignment of NaN, so we'll have to watch for div by zero errors as we go.
+        
+        self.p += numpy.finfo(float).eps #to avoid div by zeros
         
         
          
@@ -223,6 +259,12 @@ class States(object):
         @param vars: instance of a Variables object
         @param pars: instance of a Parameters object  
         '''
+        self.V = vars
+        self.P = pars
+        #convenience:
+        V = self.V
+        P = self.P
+        
         self.p = numpy.zeros((vars.Nparticles, vars.T)) #rate
         n = numpy.zeros((V.Nparticles, V.T))
         self.n = n.astype('bool')     #spike counts
@@ -234,7 +276,42 @@ class States(object):
         # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
         #self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T_o))  
 
+
+    def prior_sampler(self, memoized, t):
+        '''
+        @param memoized: instance of Memoized
+        @param t: current frame/timestep.  
+        '''
+        
+        #convenience! :
+        A = memoized
+        P = self.P
+        V = self.V
+        F = V.F
+        
+        #spike histories block
+        
+        self.p_new = self.p[:,t]
+        
+        self.next_n = A.U_sampl[:,t] < self.p_new  
+        
+        #this line is clearly a calcium thing but it'll have to be something for the hill stuff, which is worthwhile since the dye definitely saturates. 
+        self.next_C        = (1-P.a)*self.C[:,t-1]+P.A*self.next_n+P.a*P.C_0+A.epsilon_c[:,t]
+        
+        #then there's an if for intermittent sampling that is now always true
+        S_mu = Hill_v1(P,S.next_C)
+        F_mu = P.alpha*S_mu*P.beta   #E[F_t]
+        F_var = P.gamma*S_mu+P.zeta  #V[F_t]
+        ln_w = -0.5* numpy.power((F[t] - F_mu),2) / F_var - numpy.log(F_var)/2
+        ln_w = ln_w - numpy.max(ln_w)
+        w = numpy.exp(ln_w)
+        
+        self.next_w_f = w/numpy.sum(w)
+    
+    
+    
 def forward(vars, pars):
+    
     '''
     the model is F_t = f(C) = alpha C^n/(C^n + k_d) + beta + e_t,
     where e_t ~ N[0, gamma*f(C)+zeta]
@@ -255,9 +332,35 @@ def forward(vars, pars):
     
     #skipping another V.freq block
     
-    O.update_moments(A,S,0)
+    O.update_moments(A,S,0) # the 0 used to be s, which is initialized to V.Freq, which is 1. but is it even really a constant, or does V.freq incremement somewhwere?
+    
+    #convenience:
+    V = vars
+    P = pars
+    #here is the particle filter:
+    for t in xrange(1,V.T): #are these the right timestep bounds?
+        S.prior_sampler(A,t)
+        
+        S.C[:,t]=S.next_C
+        S.n[:,t]=S.next_n
+        S.w_f[:,t]=S.next_w_f
+        
+        #spikeHist block
+        
+        #here is stratified respampling:
+        Nresamp = t
+        S.Neff(Nresamp) = 1/numpy.sum(numpy.power(S.w_f[:,t],2))
+        #there should be an if here, but for now we're always doing prior sampling,
+        #so resample:
+        
         
     
+def Hill_v1(pars,C):
+    '''
+    % generalized hill model
+    '''
+    C[C<0]  = 0;
+    return numpy.power(C,pars.n) / ( numpy.power(C,pars.n) +pars.k_d);
     
 
 def backward():
