@@ -1,5 +1,6 @@
 import numpy, pylab, matplotlib
-import random, os
+import random, os, bisect
+
 
 class Variables(object):
     """variables specifying the particulars of the trace and the preferences of the user."""
@@ -352,6 +353,9 @@ def forward(vars, pars):
         S.Neff(Nresamp) = 1/numpy.sum(numpy.power(S.w_f[:,t],2))
         #there should be an if here, but for now we're always doing prior sampling,
         #so resample:
+        edges = numpy.insert(0,0,S.w_f[:,t].cumsum())
+        ind = histc_j(A.U_resamp[Nresamp,:], edges)
+        
         
         
     
@@ -361,6 +365,21 @@ def Hill_v1(pars,C):
     '''
     C[C<0]  = 0;
     return numpy.power(C,pars.n) / ( numpy.power(C,pars.n) +pars.k_d);
+
+def histc_j(x, edges):
+    '''
+    given a vector, v, and a (sorted) list of N+1 edges defining the N bins, 
+    returns a map, m, s.t. m[j] tells you which bin v[j] falls into.
+    '''
+    inds = numpy.zeros(x.size)
+    for i in xrange(len(x)):
+        inds[i] = max(0, bisect.bisect_left(edges,x[i])-1) 
+        #bisect is intended for mainting a sorted list, so it only returns 0
+        #if x[i]<=edges[0],  so the call to max is to ensure that we don't put
+        #the smallest value into some imaginary bin -1. 
+    
+    return inds
+        
     
 
 def backward():
