@@ -354,8 +354,17 @@ def forward(vars, pars):
         #there should be an if here, but for now we're always doing prior sampling,
         #so resample:
         edges = numpy.insert(0,0,S.w_f[:,t].cumsum())
-        ind = histc_j(A.U_resamp[Nresamp,:], edges)
+        ind = histc_j(A.U_resamp[Nresamp,:], edges) # this does the strat. resamp.
+        random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
         
+        
+        S.p[:,t-V.freq+1:t]   = S.p[ind,t-V.freq+1:t];      #% resample probabilities (necessary?)
+        #skipping a resampling of calcium
+        S.w_f[:,t-V.freq+1:t] = 1/V.Nparticles*numpy.ones((V.Nparticles,V.freq)); #% reset weights
+        
+        #skipping a spikehist block
+        O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
+        O.s = t #update the time var
         
         
     
