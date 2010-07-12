@@ -248,9 +248,7 @@ class ObsLik(object):
         
          
 
-            
-                            
-        
+
 
 class States(object):
     """ states of the model"""
@@ -270,8 +268,8 @@ class States(object):
         n = numpy.zeros((V.Nparticles, V.T))
         self.n = n.astype('bool')     #spike counts
         self.C = P.C_init * numpy.ones((V.Nparticles, V.T)) #calcium -- probably to be rao-blackwellized away tho!
-        self.w_f = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T))) #forward particle weights
-        self.w_b = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T))) #backward particle weights
+        self.w_f = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T)) #forward particle weights
+        self.w_b = (1.0 / V.Nparticles) * numpy.ones((V.Nparticles, V.T)) #backward particle weights
         
         #note: i think we shouldn't need this, or it shouldn't be a function of T_o, which we've gotten rid of. 
         # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
@@ -350,7 +348,7 @@ def forward(vars, pars):
         
         #here is stratified respampling:
         Nresamp = t
-        S.Neff(Nresamp) = 1/numpy.sum(numpy.power(S.w_f[:,t],2))
+        S.Neff[Nresamp] = 1/numpy.sum(numpy.power(S.w_f[:,t],2))
         #there should be an if here, but for now we're always doing prior sampling,
         #so resample:
         edges = numpy.insert(0,0,S.w_f[:,t].cumsum())
