@@ -1,5 +1,5 @@
 import numpy, pylab, matplotlib
-import random, os, bisect
+import random, os, bisect, re
 
 
 class Variables(object):
@@ -54,7 +54,7 @@ class Variables(object):
         self.est_F = est_F
         self.showGraphs =showGraphs
         
-        if(x==None): self.x = numpy.ones(len(T))
+        if(x==None): self.x = numpy.ones(self.T)
         else:self.x = x
         
 
@@ -142,7 +142,7 @@ class Parameters(object):
 class Memoized(object):
     ''' creates and holds some convenience vectors and matrices that we'll reuse a lot.  
     '''
-    def __init(self, vars, pars):
+    def __init__(self, vars, pars):
         '''
         sets it up. 
         @param vars: a Variables object.  
@@ -173,16 +173,17 @@ class ObsLik(object):
         @param vars: a Variables object 
         @param pars: a Parameters object 
         '''
-        self.p_o = numpy.zeros(2,1)
-        self.mu_o = numpy.zeros(2,1)
+        self.p_o = numpy.zeros((2,1))
+        self.mu_o = numpy.zeros((2,1))
         self.sig2_o = numpy.zeros(1)
         self.p =  numpy.zeros(1)
         self.mu = numpy.zeros(1)
         self.sig2 = numpy.zeros(1)
         self.s = 1  # s = v.freq = "intermittent observation frequency". it's always going to be 1 for a while.
-        self.init_like(pars, vars.F(0))
         self.V = vars
         self.P = pars
+        
+        self.init_lik()
         
     def init_lik(self):
         '''
@@ -195,8 +196,8 @@ class ObsLik(object):
                             1/P.n)
         
         mu1 = finv #copying josh's variable names
-        if( mu1 > 0 and numpy.imag(mu1)==0):
-            pass
+        if( (mu1 > 0).all() and (numpy.imag(mu1)==0).all()):
+            self.sig1 = -1 / (-(-P.alpha * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) + P.alpha * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) + 2 * (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 2 * (-P.alpha * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) + P.alpha * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) * (P.gamma * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) - P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) - (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) * (-P.alpha * mu1 ** P.n * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) + P.alpha * mu1 ** P.n * P.n / mu1 ** 2 / (mu1 ** P.n + P.k_d) + 3 * P.alpha * (mu1 ** P.n) ** 2 * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) ** 2 - 2 * P.alpha * (mu1 ** P.n) ** 3 / (mu1 ** P.n + P.k_d) ** 3 * P.n ** 2 / mu1 ** 2 - P.alpha * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1 ** 2) - (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 3 * (P.gamma * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) - P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) ** 2 + 1 / 2 * (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 2 * (P.gamma * mu1 ** P.n * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) - P.gamma * mu1 ** P.n * P.n / mu1 ** 2 / (mu1 ** P.n + P.k_d) - 3 * P.gamma * (mu1 ** P.n) ** 2 * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) ** 2 + 2 * P.gamma * (mu1 ** P.n) ** 3 / (mu1 ** P.n + P.k_d) ** 3 * P.n ** 2 / mu1 ** 2 + P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1 ** 2) - 1 / 2 * (P.gamma * mu1 ** P.n * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) - P.gamma * mu1 ** P.n * P.n / mu1 ** 2 / (mu1 ** P.n + P.k_d) - 3 * P.gamma * (mu1 ** P.n) ** 2 * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) ** 2 + 2 * P.gamma * (mu1 ** P.n) ** 3 / (mu1 ** P.n + P.k_d) ** 3 * P.n ** 2 / mu1 ** 2 + P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1 ** 2) / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) + 1 / 2 * (P.gamma * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) - P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 2)
             #sig1=-1/(-(-P.alpha*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)+P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)+2*(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2*(-P.alpha*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)+P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)-(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)*(-P.alpha*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)+P.alpha*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)+3*P.alpha*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2-2*P.alpha*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2-P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)-(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^3*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2+1/2*(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2*(P.gamma*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)-P.gamma*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)-3*P.gamma*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2+2*P.gamma*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2+P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)-1/2*(P.gamma*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)-P.gamma*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)-3*P.gamma*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2+2*P.gamma*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2+P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)+1/2*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2);
         else:
             self.mu1 = 0
@@ -212,7 +213,7 @@ class ObsLik(object):
         P = self.P
         V = self.V
         
-        #skipping a line where we'd be setting mu1 and sig1 from init_lik .. 
+        self.init_lik()
         self.p[0] = 1
         #if we had called init_like we'd now be propagating those vals into self.[mu,sig2]
         
@@ -298,7 +299,7 @@ class States(object):
         self.next_C        = (1-P.a)*self.C[:,t-1]+P.A*self.next_n+P.a*P.C_0+A.epsilon_c[:,t]
         
         #then there's an if for intermittent sampling that is now always true
-        S_mu = Hill_v1(P,S.next_C)
+        S_mu = Hill_v1(P,self.next_C)
         F_mu = P.alpha*S_mu*P.beta   #E[F_t]
         F_var = P.gamma*S_mu+P.zeta  #V[F_t]
         ln_w = -0.5* numpy.power((F[t] - F_mu),2) / F_var - numpy.log(F_var)/2
@@ -320,10 +321,10 @@ def forward(vars, pars):
     
     @return: instance of a States object  (simulation states)
     '''
-    A = Memoized(vars)
+    A = Memoized(vars, pars) 
     S = States(vars, pars)
     #skipping the spike history stuff, but it would go roughly here-ish, and in some __init__s. 
-    O = Obslik(vars, pars)
+    O = ObsLik(vars, pars)
     
     O.p[0] = 1
     O.mu[0] = O.mu_o[0]
@@ -352,8 +353,17 @@ def forward(vars, pars):
         #there should be an if here, but for now we're always doing prior sampling,
         #so resample:
         edges = numpy.insert(0,0,S.w_f[:,t].cumsum())
-        ind = histc_j(A.U_resamp[Nresamp,:], edges)
+        ind = histc_j(A.U_resamp[Nresamp,:], edges) # this does the strat. resamp.
+        random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
         
+        
+        S.p[:,t-V.freq+1:t]   = S.p[ind,t-V.freq+1:t];      #% resample probabilities (necessary?)
+        #skipping a resampling of calcium
+        S.w_f[:,t-V.freq+1:t] = 1/V.Nparticles*numpy.ones((V.Nparticles,V.freq)); #% reset weights
+        
+        #skipping a spikehist block
+        O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
+        O.s = t #update the time var
         
         
     
@@ -382,3 +392,29 @@ def histc_j(x, edges):
 
 def backward():
     pass
+    
+    
+    
+if __name__ == "__main__":
+    par = os.path.pardir
+    sep = os.path.sep
+    fstring=par + sep + par + sep + 'data'+sep+'fluo.txt'
+    #print(fstring)
+    fluofile = open(fstring,'r')
+     
+    line = fluofile.readline()
+    #print(line)
+    numtext=re.split('[\t]', line)
+    numlist=numpy.zeros(len(numtext))
+    for i in xrange(len(numtext)-1):
+        #print('%d:  %s'%(i, numtext[i]))
+        numlist[i] = float(numtext[i])
+        
+    fluofile.close()
+    v = Variables(numlist, 0.075)
+    p = Parameters(v)
+    forward(v,p)
+    
+    
+    pylab.plot(numlist)
+    pylab.show()
