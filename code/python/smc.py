@@ -407,15 +407,15 @@ if __name__ == "__main__":
     line = fluofile.readline()
     #print(line)
     numtext=re.split('[\t]', line)
-    numlist=numpy.zeros(len(numtext))
+    numlist=numpy.zeros(len(numtext)-1)  #omitting the last value in the fluo file b/c it's a zero-pad. 
     for i in xrange(len(numtext)-1):
         #print('%d:  %s'%(i, numtext[i]))
         numlist[i] = float(numtext[i])
         
     fluofile.close()
-    v = Variables(numlist, 0.075)
-    p = Parameters(v)
-    forward(v,p)
+    #v = Variables(numlist, 0.075)
+    #p = Parameters(v)
+    #forward(v,p)
     
     
     pylab.plot(numlist)
