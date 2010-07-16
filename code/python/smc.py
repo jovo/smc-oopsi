@@ -249,9 +249,7 @@ class ObsLik(object):
         
          
 
-            
-                            
-        
+
 
 class States(object):
     """ states of the model"""
@@ -276,7 +274,7 @@ class States(object):
         
         #note: i think we shouldn't need this, or it shouldn't be a function of T_o, which we've gotten rid of. 
         # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
-        #self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T_o))  
+        self.Neff = (1.0 / V.Nparticles) #  #shoulda been multiplied but this, but i think it's just [1] now: #* numpy.ones((1,V.T_o))  
 
 
     def prior_sampler(self, memoized, t):
@@ -359,9 +357,10 @@ def forward(vars, pars):
         random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
         
         
-        S.p[:,t-V.freq+1:t]   = S.p[ind,t-V.freq+1:t];      #% resample probabilities (necessary?)
-        #skipping a resampling of calcium
-        S.w_f[:,t-V.freq+1:t] = 1/V.Nparticles*numpy.ones((V.Nparticles,V.freq)); #% reset weights
+        S.p[:,t]   =  S.p[ind,t]   #:: if V.freq is 1, then t-V.freq+1 = t. right? #t-V.freq+1:t];      #% resample probabilities (necessary?)
+        S.n[:,t]   =  S.n[ind,t]
+        S.C[:,t]   =  S.C[ind,t]
+        S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles,1)); #% reset weights
         
         #skipping a spikehist block
         O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
