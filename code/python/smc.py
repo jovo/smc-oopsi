@@ -274,7 +274,9 @@ class States(object):
         
         #note: i think we shouldn't need this, or it shouldn't be a function of T_o, which we've gotten rid of. 
         # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
-        self.Neff = (1.0 / V.Nparticles) #  #shoulda been multiplied but this, but i think it's just [1] now: #* numpy.ones((1,V.T_o))  
+        print('V.T: %d'%V.T)
+        self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T+1))  
+        print(self.Neff.shape)
 
 
     def prior_sampler(self, memoized, t):
@@ -349,6 +351,7 @@ def forward(vars, pars):
         
         #here is stratified respampling:
         Nresamp = t
+        print('len S.Neff: %d   t: %d  , size S.W_f: %d, %d'%(len(S.Neff), t, S.w_f.shape[0], S.w_f.shape[1]))
         S.Neff[Nresamp] = 1/numpy.sum(numpy.power(S.w_f[:,t],2))
         #there should be an if here, but for now we're always doing prior sampling,
         #so resample:
@@ -412,10 +415,10 @@ if __name__ == "__main__":
         numlist[i] = float(numtext[i])
         
     fluofile.close()
-    #v = Variables(numlist, 0.075)
-    #p = Parameters(v)
-    #forward(v,p)
+    v = Variables(numlist, 0.075)
+    p = Parameters(v)
+    forward(v,p)
     
     
-    pylab.plot(numlist)
-    pylab.show()
+    #pylab.plot(numlist)
+    #pylab.show()
