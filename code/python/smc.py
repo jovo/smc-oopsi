@@ -154,7 +154,7 @@ class Memoized(object):
         self.U_sampl = numpy.random.uniform(size=(vars.Nparticles, vars.T))
         diffs = 1
         ints = numpy.array(range(0,vars.Nparticles,diffs))
-        self.U_resamp = ints+ diffs*numpy.random.uniform(size = (1,vars.Nparticles))
+        self.U_resamp = ints+ diffs*numpy.random.uniform(size = (vars.T,vars.Nparticles))
         
 #here's the original code,  and ints was to Nparticles+1. 
 #so instead, take ints only to Nparticles, 
@@ -274,9 +274,7 @@ class States(object):
         
         #note: i think we shouldn't need this, or it shouldn't be a function of T_o, which we've gotten rid of. 
         # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
-        print('V.T: %d'%V.T)
         self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T+1))  
-        print(self.Neff.shape)
 
 
     def prior_sampler(self, memoized, t):
@@ -307,6 +305,13 @@ class States(object):
         ln_w = -0.5* numpy.power((F[t] - F_mu),2) / F_var - numpy.log(F_var)/2
         ln_w = ln_w - numpy.max(ln_w)
         w = numpy.exp(ln_w)
+        
+        print(S_mu)
+        print(F_mu)
+        print(F_var)
+        print(ln_w)
+        print(w)
+        
         
         self.next_w_f = w/numpy.sum(w)
     
@@ -351,14 +356,18 @@ def forward(vars, pars):
         
         #here is stratified respampling:
         Nresamp = t
-        print('len S.Neff: %d   t: %d  , size S.W_f: %d, %d'%(len(S.Neff), t, S.w_f.shape[0], S.w_f.shape[1]))
-        S.Neff[Nresamp] = 1/numpy.sum(numpy.power(S.w_f[:,t],2))
+        #print('len S.Neff: %d   t: %d  , size S.W_f: %d, %d'%(len(S.Neff), t, S.w_f.shape[0], S.w_f.shape[1]))
+        S.Neff[0,Nresamp] =  1/numpy.sum(numpy.power(S.w_f[:,t],2))
         #there should be an if here, but for now we're always doing prior sampling,
         #so resample:
-        edges = numpy.insert(0,0,S.w_f[:,t].cumsum())
+        #not sure why i did it this way:: #edges = numpy.insert(0,0,S.w_f[:,t].cumsum().T)
+        edges = S.w_f[:,t].cumsum()
+        print(edges)
         ind = histc_j(A.U_resamp[Nresamp,:], edges) # this does the strat. resamp.
         random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
         
+        print(ind)
+        #print(t)
         
         S.p[:,t]   =  S.p[ind,t]   #:: if V.freq is 1, then t-V.freq+1 = t. right? #t-V.freq+1:t];      #% resample probabilities (necessary?)
         S.n[:,t]   =  S.n[ind,t]
@@ -385,7 +394,7 @@ def histc_j(x, edges):
     '''
     inds = numpy.zeros(x.size)
     for i in xrange(len(x)):
-        inds[i] = max(0, bisect.bisect_left(edges,x[i])-1) 
+        inds[i] = int(max(0, bisect.bisect_left(edges,x[i])-1) )
         #bisect is intended for mainting a sorted list, so it only returns 0
         #if x[i]<=edges[0],  so the call to max is to ensure that we don't put
         #the smallest value into some imaginary bin -1. 
