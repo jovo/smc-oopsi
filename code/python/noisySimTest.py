@@ -45,7 +45,7 @@ def runsim():
     
     nn = numpy.zeros(T)
     nn[spt] = 1
-    C = numpy.zeros(T)
+    C = numpy.zeros((T,1))
     epsilon_c = sigma_c*numpy.sqrt(dt)*numpy.random.normal(size=(T,1))
     #print(epsilon_c)
     #print(C)
@@ -61,12 +61,19 @@ def runsim():
     #and the timeseries is what we're building right now !! 
     S = numpy.power(C,n) / ( numpy.power(C,n) + k_d)
     
-    pylab.plot(S)
-    pylab.show()
+    #pylab.plot(S)
+    #pylab.show()
     
     eps_t = numpy.random.normal(size=(T,1))
+    #print(eps_t.shape)
+    
+    gg = numpy.sqrt(gamma*S+zeta)
+
+    
     F = alpha * beta + numpy.sqrt(gamma*S+zeta)*eps_t
     F[F<0] = numpy.finfo(float).eps
+    
+    print(F.shape)
     
     pylab.plot(F)
     pylab.show()
