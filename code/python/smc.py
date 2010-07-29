@@ -9,7 +9,7 @@ class Variables(object):
                  name='oopy', #name for plots/figures
                  Nparticles=99, # number of particles
                  Nspikehist=0, # number of spike history terms
-                 condsamp=True, #use conditional sampler?
+                 condsamp=False, #use conditional sampler?
                  true_n = None,   #true spikes, if available
                  smc_iter_max = 3, # max number of iterations
                  est_c = True, # do we estimate tau_c, A, C_0?
