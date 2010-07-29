@@ -385,7 +385,7 @@ def Hill_v1(pars,C):
     % generalized hill model
     '''
     C[C<0]  = 0;
-    return numpy.power(C,pars.n) / ( numpy.power(C,pars.n) +pars.k_d);
+    return numpy.power(C,pars.n) / ( numpy.power(C,pars.n) +pars.k_d)
 
 def histc_j(x, edges):
     '''
