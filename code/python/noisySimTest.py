@@ -70,7 +70,7 @@ def runsim():
     gg = numpy.sqrt(gamma*S+zeta)
 
     
-    F = alpha * beta + numpy.sqrt(gamma*S+zeta)*eps_t
+    F = alpha * S + beta + numpy.sqrt(gamma*S+zeta)*eps_t
     F[F<0] = numpy.finfo(float).eps
     
     print(F.shape)
