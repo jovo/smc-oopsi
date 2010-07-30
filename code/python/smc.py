@@ -13,7 +13,7 @@ class Variables(object):
                  true_n = None,   #true spikes, if available
                  smc_iter_max = 3, # max number of iterations
                  est_c = True, # do we estimate tau_c, A, C_0?
-                 est_t = True, # do we estimate tau_c?
+                 est_t = True,  # do we estimate tau_c?
                  est_n = True, # b,k
                  est_h = True, #w
                  est_F = True, #alpha, beta
@@ -219,7 +219,8 @@ class ObsLik(object):
         
         #two blocks for spike histories
         
-        phat  = 1-numpy.exp(-numpy.exp(P.kx[t+1])*V.dt)  #if k, kx are non-scalar, then the inner term becomes -numpy.exp( p.kx[t+1).T * V.dt
+        if(t < (V.T-1)):
+            phat  = 1-numpy.exp(-numpy.exp(P.kx[t+1])*V.dt)  #if k, kx are non-scalar, then the inner term becomes -numpy.exp( p.kx[t+1).T * V.dt
         
         #an intermittent sampling for loop: tt=s:-1:2
         
@@ -302,15 +303,15 @@ class States(object):
         S_mu = Hill_v1(P,self.next_C)
         F_mu = P.alpha*S_mu*P.beta   #E[F_t]
         F_var = P.gamma*S_mu+P.zeta  #V[F_t]
-        ln_w = -0.5* numpy.power((F[t] - F_mu),2) / F_var - numpy.log(F_var)/2
+        ln_w = -0.5* numpy.power((F[t] - F_mu),2.) / F_var - numpy.log(F_var)/2.
         ln_w = ln_w - numpy.max(ln_w)
         w = numpy.exp(ln_w)
         
-        print(S_mu)
-        print(F_mu)
-        print(F_var)
-        print(ln_w)
-        print(w)
+        #print(S_mu)
+        #print(F_mu)
+        #print(F_var)
+        #print(ln_w)
+        #print(w)
         
         
         self.next_w_f = w/numpy.sum(w)
@@ -333,7 +334,7 @@ def forward(vars, pars):
     #skipping the spike history stuff, but it would go roughly here-ish, and in some __init__s. 
     O = ObsLik(vars, pars)
     
-    O.p[0] = 1
+    O.p[0] = 1.
     O.mu[0] = O.mu_o[0]
     O.sig2[0] = O.sig2_o[0]
     
@@ -346,6 +347,7 @@ def forward(vars, pars):
     P = pars
     #here is the particle filter:
     for t in xrange(1,V.T): #are these the right timestep bounds?
+        print(t)
         S.prior_sampler(A,t)
         
         S.C[:,t]=S.next_C
@@ -362,17 +364,14 @@ def forward(vars, pars):
         #so resample:
         #not sure why i did it this way:: #edges = numpy.insert(0,0,S.w_f[:,t].cumsum().T)
         edges = S.w_f[:,t].cumsum()
-        print(edges)
         ind = histc_j(A.U_resamp[Nresamp,:], edges) # this does the strat. resamp.
         random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
-        
-        print(ind)
-        #print(t)
+
         
         S.p[:,t]   =  S.p[ind,t]   #:: if V.freq is 1, then t-V.freq+1 = t. right? #t-V.freq+1:t];      #% resample probabilities (necessary?)
         S.n[:,t]   =  S.n[ind,t]
         S.C[:,t]   =  S.C[ind,t]
-        S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles,1)); #% reset weights
+        S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles)) #% reset weights
         
         #skipping a spikehist block
         O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
@@ -392,7 +391,7 @@ def histc_j(x, edges):
     given a vector, v, and a (sorted) list of N+1 edges defining the N bins, 
     returns a map, m, s.t. m[j] tells you which bin v[j] falls into.
     '''
-    inds = numpy.zeros(x.size)
+    inds = numpy.zeros(x.size, dtype=numpy.int)
     for i in xrange(len(x)):
         inds[i] = int(max(0, bisect.bisect_left(edges,x[i])-1) )
         #bisect is intended for mainting a sorted list, so it only returns 0

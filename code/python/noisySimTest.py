@@ -56,12 +56,14 @@ def setupSimData():
 
     
 
-
+def forwardTest():
+    p = setupSimData()
+    smc.forward(p.V, p)
+    
 
 
 
 if __name__ == "__main__":
-    p = setupSimData()
-     
+    forwardTest()
 
 
