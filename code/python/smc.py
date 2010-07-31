@@ -152,9 +152,13 @@ class Memoized(object):
         self.oney = numpy.ones((vars.Nparticles, 1))
         self.zeroy = numpy.zeros((vars.Nparticles, 1))
         self.U_sampl = numpy.random.uniform(size=(vars.Nparticles, vars.T))
-        diffs = 1
-        ints = numpy.array(range(0,vars.Nparticles,diffs))
-        self.U_resamp = ints+ diffs*numpy.random.uniform(size = (vars.T,vars.Nparticles))
+        
+        
+        diffs = 1.0 / vars.Nparticles
+        ints = numpy.arange(0,1,diffs)
+        shapedInts = numpy.repeat(ints, vars.T).reshape((vars.Nparticles,vars.T)).T #the second .T is a transpose operation.
+        self.U_resamp = shapedInts  + diffs*numpy.random.uniform(size = (vars.T,vars.Nparticles))
+        
         
 #here's the original code,  and ints was to Nparticles+1. 
 #so instead, take ints only to Nparticles, 
@@ -395,11 +399,6 @@ def histc_j(x, edges):
     given a vector, x, and a (sorted) list of N+1 edges defining the N bins, 
     returns a map, m, s.t. m[j] tells you which bin x[j] falls into.
     '''
-
-    print(x)
-    print('x!x!')
-    print(edges)
-    
     inds = numpy.zeros(x.size, dtype=numpy.int)
     for i in xrange(len(x)):
         inds[i] = int(max(0, bisect.bisect_left(edges,x[i])-1) )
