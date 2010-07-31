@@ -64,8 +64,8 @@ class Parameters(object):
                  V, 
                  tau_c = 1.0,
                  A=50.0,
-                 C_0 = 0.,
-                 C_init = 0.,
+                 C_0 = 5e-5,
+                 C_init = 5e-5,
                  sigma_c = 0.1,
                  n=1.,
                  k_d = 200.,
@@ -76,7 +76,7 @@ class Parameters(object):
                  gamma=None,
                  omega=-1.,
                  tau_h = 0.02,
-                 sigma_h = 0.,
+                 sigma_h = 5e-5,
                  g=None,
                  sig2_h = None,
                  a=None,
@@ -200,8 +200,8 @@ class ObsLik(object):
             self.sig1 = -1 / (-(-P.alpha * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) + P.alpha * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) + 2 * (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 2 * (-P.alpha * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) + P.alpha * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) * (P.gamma * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) - P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) - (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) * (-P.alpha * mu1 ** P.n * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) + P.alpha * mu1 ** P.n * P.n / mu1 ** 2 / (mu1 ** P.n + P.k_d) + 3 * P.alpha * (mu1 ** P.n) ** 2 * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) ** 2 - 2 * P.alpha * (mu1 ** P.n) ** 3 / (mu1 ** P.n + P.k_d) ** 3 * P.n ** 2 / mu1 ** 2 - P.alpha * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1 ** 2) - (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 3 * (P.gamma * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) - P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) ** 2 + 1 / 2 * (F - P.alpha * mu1 ** P.n / (mu1 ** P.n + P.k_d) - P.beta) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 2 * (P.gamma * mu1 ** P.n * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) - P.gamma * mu1 ** P.n * P.n / mu1 ** 2 / (mu1 ** P.n + P.k_d) - 3 * P.gamma * (mu1 ** P.n) ** 2 * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) ** 2 + 2 * P.gamma * (mu1 ** P.n) ** 3 / (mu1 ** P.n + P.k_d) ** 3 * P.n ** 2 / mu1 ** 2 + P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1 ** 2) - 1 / 2 * (P.gamma * mu1 ** P.n * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) - P.gamma * mu1 ** P.n * P.n / mu1 ** 2 / (mu1 ** P.n + P.k_d) - 3 * P.gamma * (mu1 ** P.n) ** 2 * P.n ** 2 / mu1 ** 2 / (mu1 ** P.n + P.k_d) ** 2 + 2 * P.gamma * (mu1 ** P.n) ** 3 / (mu1 ** P.n + P.k_d) ** 3 * P.n ** 2 / mu1 ** 2 + P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1 ** 2) / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) + 1 / 2 * (P.gamma * mu1 ** P.n * P.n / mu1 / (mu1 ** P.n + P.k_d) - P.gamma * (mu1 ** P.n) ** 2 / (mu1 ** P.n + P.k_d) ** 2 * P.n / mu1) ** 2 / (P.gamma * mu1 ** P.n / (mu1 ** P.n + P.k_d) + P.zeta) ** 2)
             #sig1=-1/(-(-P.alpha*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)+P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)+2*(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2*(-P.alpha*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)+P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)-(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)*(-P.alpha*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)+P.alpha*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)+3*P.alpha*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2-2*P.alpha*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2-P.alpha*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)-(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^3*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2+1/2*(F-P.alpha*mu1^P.n/(mu1^P.n+P.k_d)-P.beta)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2*(P.gamma*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)-P.gamma*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)-3*P.gamma*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2+2*P.gamma*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2+P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)-1/2*(P.gamma*mu1^P.n*P.n^2/mu1^2/(mu1^P.n+P.k_d)-P.gamma*mu1^P.n*P.n/mu1^2/(mu1^P.n+P.k_d)-3*P.gamma*(mu1^P.n)^2*P.n^2/mu1^2/(mu1^P.n+P.k_d)^2+2*P.gamma*(mu1^P.n)^3/(mu1^P.n+P.k_d)^3*P.n^2/mu1^2+P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1^2)/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)+1/2*(P.gamma*mu1^P.n*P.n/mu1/(mu1^P.n+P.k_d)-P.gamma*(mu1^P.n)^2/(mu1^P.n+P.k_d)^2*P.n/mu1)^2/(P.gamma*mu1^P.n/(mu1^P.n+P.k_d)+P.zeta)^2);
         else:
-            self.mu1 = 0
-            self.sig1 = 0
+            self.mu1 = 5e-5
+            self.sig1 = 5e-5
             
     def update_moments(self, A, states, t):
         '''
@@ -214,7 +214,7 @@ class ObsLik(object):
         V = self.V
         
         self.init_lik()
-        self.p[0] = 1
+        self.p[0] = 1.0
         #if we had called init_like we'd now be propagating those vals into self.[mu,sig2]
         
         #two blocks for spike histories
@@ -367,6 +367,7 @@ def forward(vars, pars):
         ind = histc_j(A.U_resamp[Nresamp,:], edges) # this does the strat. resamp.
         random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
 
+        #print(ind)
         
         S.p[:,t]   =  S.p[ind,t]   #:: if V.freq is 1, then t-V.freq+1 = t. right? #t-V.freq+1:t];      #% resample probabilities (necessary?)
         S.n[:,t]   =  S.n[ind,t]
@@ -376,6 +377,9 @@ def forward(vars, pars):
         #skipping a spikehist block
         O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
         O.s = t #update the time var
+    
+        
+    return S
         
         
     
@@ -383,14 +387,19 @@ def Hill_v1(pars,C):
     '''
     % generalized hill model
     '''
-    C[C<0]  = 0;
+    C[C<0]  = 5e-5;
     return numpy.power(C,pars.n) / ( numpy.power(C,pars.n) +pars.k_d)
 
 def histc_j(x, edges):
     '''
-    given a vector, v, and a (sorted) list of N+1 edges defining the N bins, 
-    returns a map, m, s.t. m[j] tells you which bin v[j] falls into.
+    given a vector, x, and a (sorted) list of N+1 edges defining the N bins, 
+    returns a map, m, s.t. m[j] tells you which bin x[j] falls into.
     '''
+
+    print(x)
+    print('x!x!')
+    print(edges)
+    
     inds = numpy.zeros(x.size, dtype=numpy.int)
     for i in xrange(len(x)):
         inds[i] = int(max(0, bisect.bisect_left(edges,x[i])-1) )
