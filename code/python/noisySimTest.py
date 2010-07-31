@@ -57,8 +57,16 @@ def setupSimData():
     
 
 def forwardTest():
-    p = setupSimData()
-    smc.forward(p.V, p)
+    P = setupSimData()
+    S = smc.forward(P.V, P)
+    
+    pylab.figure()
+    pylab.hold(True)
+    pylab.plot(S.C[0,:])
+    pylab.plot(S.C[2,:])
+    
+    pylab.show()
+    
     
 
 
