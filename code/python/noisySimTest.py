@@ -74,12 +74,32 @@ def forwardTest():
     #nbar /= P.V.Nparticles
     
     pylab.figure()
-    pylab.plot(cbar)
-    pylab.title('expected calcium')
+    pylab.hold(True)
+    pylab.plot(cbar, label='E[C]')
+    pylab.title('expected Ca vs arbitrary particles')
+    pylab.plot(S.C[3,:], label='particle 3')
+    pylab.plot(S.C[10,:], label='particle 10')
+    pylab.plot(S.C[20,:], label='particle 20')
+    pylab.legend()
+    
     
     pylab.figure()
     pylab.plot(nbar)
     pylab.title('expected spikes')
+    
+
+    #pylab.figure()
+    pylab.matshow(S.w_f)
+    pylab.title('min s.w_f %f , max s.w_f: %f'%(numpy.min(S.w_f), numpy.max(S.w_f)))
+    
+    
+    pylab.figure()
+    pylab.hold(True)
+    pylab.plot(S.w_f[3,:], label='particle 3')
+    pylab.plot(S.w_f[10,:], label='particle 10')
+    pylab.plot(S.w_f[20,:], label='particle 20')
+    pylab.legend()
+    pylab.title('individual particle weights')
     
     pylab.show()
     

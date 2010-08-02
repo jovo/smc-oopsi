@@ -312,6 +312,8 @@ class States(object):
         F_mu = P.alpha*S_mu+P.beta   #E[F_t]
         F_var = P.gamma*S_mu+P.zeta  #V[F_t]
         ln_w = -0.5* numpy.power((F[t] - F_mu),2.) / F_var - numpy.log(F_var)/2.
+        if(t>0):
+            ln_w += numpy.log(self.w_f[:,t-1])
         ln_w = ln_w - numpy.max(ln_w)
         w = numpy.exp(ln_w)
 
@@ -347,6 +349,7 @@ def forward(vars, pars):
     #convenience:
     V = vars
     P = pars
+    Nresamp = 0
     #here is the particle filter:
     for t in xrange(1,V.T): #are these the right timestep bounds?
         print(t)
@@ -361,6 +364,7 @@ def forward(vars, pars):
         #here is stratified respampling:
         Nresamp = t
         S.Neff[0,Nresamp] =  1/numpy.sum(numpy.power(S.w_f[:,t],2))
+        print(S.Neff[0,Nresamp])
         if(S.Neff[0,Nresamp] < V.Nparticles/2.0):
             #so resample:
             print('resampling')
@@ -372,6 +376,7 @@ def forward(vars, pars):
             S.n[:,t]   =  S.n[ind,t]
             S.C[:,t]   =  S.C[ind,t]
             S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles)) #% reset weights
+            #Nresamp += 1
             
         #skipping a spikehist block
         #O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
