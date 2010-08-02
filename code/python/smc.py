@@ -7,7 +7,7 @@ class Variables(object):
     def __init__(self, F, dt, 
                  x=None,   #stimulus (zeros vector of length T that has 1s in the frames that have high spike likelihood)
                  name='oopy', #name for plots/figures
-                 Nparticles=999, # number of particles
+                 Nparticles=99, # number of particles
                  Nspikehist=0, # number of spike history terms
                  condsamp=False, #use conditional sampler?
                  true_n = None,   #true spikes, if available
@@ -309,20 +309,14 @@ class States(object):
         
         #then there's an if for intermittent sampling that is now always true
         S_mu = Hill_v1(P,self.C[:,t])
-        F_mu = P.alpha*S_mu*P.beta   #E[F_t]
+        F_mu = P.alpha*S_mu+P.beta   #E[F_t]
         F_var = P.gamma*S_mu+P.zeta  #V[F_t]
         ln_w = -0.5* numpy.power((F[t] - F_mu),2.) / F_var - numpy.log(F_var)/2.
         ln_w = ln_w - numpy.max(ln_w)
         w = numpy.exp(ln_w)
-        
-        #print(S_mu)
-        #print(F_mu)
-        #print(F_var)
-        #print(ln_w)
-        #print(w)
-        
-        
+
         self.w_f[:,t] = w/numpy.sum(w)
+        #print(self.w_f[:,t])
     
     
     
@@ -366,22 +360,19 @@ def forward(vars, pars):
         
         #here is stratified respampling:
         Nresamp = t
-        #print('len S.Neff: %d   t: %d  , size S.W_f: %d, %d'%(len(S.Neff), t, S.w_f.shape[0], S.w_f.shape[1]))
         S.Neff[0,Nresamp] =  1/numpy.sum(numpy.power(S.w_f[:,t],2))
-        #there should be an if here, but for now we're always doing prior sampling,
-        #so resample:
-        #not sure why i did it this way:: #edges = numpy.insert(0,0,S.w_f[:,t].cumsum().T)
-        edges = S.w_f[:,t].cumsum()
-        ind = histc_j(A.U_resamp[Nresamp,:], edges) # this does the strat. resamp.
-        random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
-
-        #print(ind)
-        
-        S.p[:,t]   =  S.p[ind,t]   #:: if V.freq is 1, then t-V.freq+1 = t. right? #t-V.freq+1:t];      #% resample probabilities (necessary?)
-        S.n[:,t]   =  S.n[ind,t]
-        S.C[:,t]   =  S.C[ind,t]
-        S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles)) #% reset weights
-        
+        if(S.Neff[0,Nresamp] < V.Nparticles/2.0):
+            #so resample:
+            print('resampling')
+            edges = numpy.insert(S.w_f[:,t].cumsum(),0,0)
+            ind = histc_j(A.U_resamp[Nresamp,:], edges) # this does the strat. resamp.
+            random.shuffle(ind) #do a permutation of the inds (to avoid potential biases.?)
+            
+            S.p[:,t]   =  S.p[ind,t]   #:: if V.freq is 1, then t-V.freq+1 = t. right? #t-V.freq+1:t];      #% resample probabilities (necessary?)
+            S.n[:,t]   =  S.n[ind,t]
+            S.C[:,t]   =  S.C[ind,t]
+            S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles)) #% reset weights
+            
         #skipping a spikehist block
         #O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
         #O.s = t #update the time var
