@@ -60,10 +60,26 @@ def forwardTest():
     P = setupSimData()
     S = smc.forward(P.V, P)
     
+
+    cbar = numpy.zeros(P.V.T)
+    nbar = numpy.zeros(P.V.T)
+    
+    for t in xrange(P.V.T):
+        for i in xrange(P.V.Nparticles):
+            weight = S.w_f[i,t]
+            cbar[t] += weight * S.C[i,t]
+            nbar[t] += weight * S.n[i,t]
+    
+    #cbar /= P.V.Nparticles
+    #nbar /= P.V.Nparticles
+    
     pylab.figure()
-    pylab.hold(True)
-    pylab.plot(S.C[0,:])
-    pylab.plot(S.C[2,:])
+    pylab.plot(cbar)
+    pylab.title('expected calcium')
+    
+    pylab.figure()
+    pylab.plot(nbar)
+    pylab.title('expected spikes')
     
     pylab.show()
     

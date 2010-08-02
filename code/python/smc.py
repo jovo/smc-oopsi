@@ -7,7 +7,7 @@ class Variables(object):
     def __init__(self, F, dt, 
                  x=None,   #stimulus (zeros vector of length T that has 1s in the frames that have high spike likelihood)
                  name='oopy', #name for plots/figures
-                 Nparticles=99, # number of particles
+                 Nparticles=999, # number of particles
                  Nspikehist=0, # number of spike history terms
                  condsamp=False, #use conditional sampler?
                  true_n = None,   #true spikes, if available
@@ -91,7 +91,7 @@ class Parameters(object):
             @param sigma_c = 0.1: standard dev of noise (uM ?? )
             @param n = 1.: hill eq. exponent
             @param k_d = 200: hill coeff.
-            @param k = 0.0001: linear filter related to spike rate
+            @param k = None: for now, ansatz for spikes per second. 
             @param alpha=None: scale for F (defaults to mean(F))
             @param beta = None: offset for F (defaults to min(F))
             @param zeta=None: constant variance (defaults to alpha/5.)
@@ -115,8 +115,8 @@ class Parameters(object):
         self.sigma_c = sigma_c
         self.n=n
         self.k_d = k_d
+        self.k=k
         if(k==None): self.k = .001
-        else: self.k = k
         self.kx = self.k*V.x; #we'll have to fix this to allow k to be non-scalar. later. 
         if(alpha==None): self.alpha = numpy.mean(V.F)
         else: self.alpha = alpha
@@ -270,7 +270,7 @@ class States(object):
         V = self.V
         P = self.P
         
-        self.p = numpy.zeros((vars.Nparticles, vars.T)) #rate
+        self.p = (P.k/V.dt) + numpy.zeros((vars.Nparticles, vars.T)) #rate
         n = numpy.zeros((V.Nparticles, V.T))
         self.n = n.astype('bool')     #spike counts
         self.C = P.C_init * numpy.ones((V.Nparticles, V.T)) #calcium -- probably to be rao-blackwellized away tho!
@@ -280,6 +280,10 @@ class States(object):
         #note: i think we shouldn't need this, or it shouldn't be a function of T_o, which we've gotten rid of. 
         # but i want it here commented out so that when i try to use S.Neff i remember why it doesn't exist.
         self.Neff = (1.0 / V.Nparticles) * numpy.ones((1,V.T+1))  
+        
+        
+        #just set S.p to the appropriate constant of putative firing rate times dt. 
+        #S.p = repmat(1-exp(-exp(P.kx)*V.dt)',1,V.Nparticles)';
 
 
     def prior_sampler(self, memoized, t):
@@ -296,15 +300,15 @@ class States(object):
         
         #spike histories block
         
-        self.p_new = self.p[:,t]
+        #self.p_new = self.p[:,t]
         
-        self.next_n = A.U_sampl[:,t] < self.p_new  
+        self.n[:,t] = A.U_sampl[:,t] < self.p[:,t]
         
         #this line is clearly a calcium thing but it'll have to be something for the hill stuff, which is worthwhile since the dye definitely saturates. 
-        self.next_C        = (1-P.a)*self.C[:,t-1]+P.A*self.next_n+P.a*P.C_0+A.epsilon_c[:,t]
+        self.C[:,t]        = (1-P.a)*self.C[:,t-1]+P.A*self.n[:,t]+P.a*P.C_0+A.epsilon_c[:,t]
         
         #then there's an if for intermittent sampling that is now always true
-        S_mu = Hill_v1(P,self.next_C)
+        S_mu = Hill_v1(P,self.C[:,t])
         F_mu = P.alpha*S_mu*P.beta   #E[F_t]
         F_var = P.gamma*S_mu+P.zeta  #V[F_t]
         ln_w = -0.5* numpy.power((F[t] - F_mu),2.) / F_var - numpy.log(F_var)/2.
@@ -318,7 +322,7 @@ class States(object):
         #print(w)
         
         
-        self.next_w_f = w/numpy.sum(w)
+        self.w_f[:,t] = w/numpy.sum(w)
     
     
     
@@ -336,15 +340,15 @@ def forward(vars, pars):
     A = Memoized(vars, pars) 
     S = States(vars, pars)
     #skipping the spike history stuff, but it would go roughly here-ish, and in some __init__s. 
-    O = ObsLik(vars, pars)
+    #O = ObsLik(vars, pars)
     
-    O.p[0] = 1.
-    O.mu[0] = O.mu_o[0]
-    O.sig2[0] = O.sig2_o[0]
+    #O.p[0] = 1.
+    #O.mu[0] = O.mu_o[0]
+    #O.sig2[0] = O.sig2_o[0]
     
     #skipping another V.freq block
     
-    O.update_moments(A,S,0) # the 0 used to be s, which is initialized to V.Freq, which is 1. but is it even really a constant, or does V.freq incremement somewhwere?
+    #O.update_moments(A,S,0) # the 0 used to be s, which is initialized to V.Freq, which is 1. but is it even really a constant, or does V.freq incremement somewhwere?
     
     #convenience:
     V = vars
@@ -354,9 +358,9 @@ def forward(vars, pars):
         print(t)
         S.prior_sampler(A,t)
         
-        S.C[:,t]=S.next_C
-        S.n[:,t]=S.next_n
-        S.w_f[:,t]=S.next_w_f
+        #S.C[:,t]=S.next_C
+        #S.n[:,t]=S.next_n
+        #S.w_f[:,t]=S.next_w_f
         
         #spikeHist block
         
@@ -379,8 +383,8 @@ def forward(vars, pars):
         S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles)) #% reset weights
         
         #skipping a spikehist block
-        O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
-        O.s = t #update the time var
+        #O.update_moments(A,S,t);                      #% estimate P[O_s | C_tt] for all t'<tt<s as a gaussian
+        #O.s = t #update the time var
     
         
     return S
