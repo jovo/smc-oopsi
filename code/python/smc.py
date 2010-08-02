@@ -116,7 +116,7 @@ class Parameters(object):
         self.n=n
         self.k_d = k_d
         self.k=k
-        if(k==None): self.k = .001
+        if(k==None): self.k = .0001
         self.kx = self.k*V.x; #we'll have to fix this to allow k to be non-scalar. later. 
         if(alpha==None): self.alpha = numpy.mean(V.F)
         else: self.alpha = alpha
@@ -354,17 +354,13 @@ def forward(vars, pars):
     for t in xrange(1,V.T): #are these the right timestep bounds?
         print(t)
         S.prior_sampler(A,t)
-        
-        #S.C[:,t]=S.next_C
-        #S.n[:,t]=S.next_n
-        #S.w_f[:,t]=S.next_w_f
-        
+
         #spikeHist block
         
         #here is stratified respampling:
         Nresamp = t
         S.Neff[0,Nresamp] =  1/numpy.sum(numpy.power(S.w_f[:,t],2))
-        print(S.Neff[0,Nresamp])
+        #print(S.Neff[0,Nresamp])
         if(S.Neff[0,Nresamp] < V.Nparticles/2.0):
             #so resample:
             print('resampling')

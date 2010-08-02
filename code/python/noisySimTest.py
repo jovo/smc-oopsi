@@ -10,7 +10,7 @@ def setupSimData():
     Nsec = T*dt #sim time in seconds
     tvec = numpy.arange(Nsec, step=dt) 
     
-    spt     = [26, 50, 84, 128, 199, 247, 355] # spike times?
+    spt     = [50,128,247]#[26, 50, 84, 128, 199, 247, 355] # spike times
     rate  = len(spt) / Nsec
     ### A = 1 # jump size
     tau = 0.5 # Ca decay const
@@ -19,7 +19,7 @@ def setupSimData():
     
     k = numpy.log(-numpy.log(1-rate*dt)/dt)
     tau_c = tau
-    A = 5 # jump size
+    A = 10 # jump size
     C_0 = .1
     C_init = C_0
     sigma_c = sig
@@ -27,7 +27,7 @@ def setupSimData():
     k_d = 200.0
     alpha = 1
     beta = 0
-    gamma = 0.
+    gamma = 0.001
     zeta = 5e-5
     a = dt/tau_c
     nn = numpy.zeros(T)
@@ -44,11 +44,11 @@ def setupSimData():
     #and Vars requires a timeseries, and the timeseries is what we're building right now !! 
     S = numpy.power(C,n) / ( numpy.power(C,n) + k_d)
 
-    eps_t = numpy.random.normal(size=(T,1))
+    eps_t = numpy.random.normal(size=(T,1)) / 10.0
     F = alpha * S + beta + numpy.sqrt(gamma*S+zeta)*eps_t
     F[F<0] = numpy.finfo(float).eps
     
-    V = smc.Variables(F,dt, true_n=spt)
+    V = smc.Variables(F,dt, true_n=spt, Nparticles=999)
     P = smc.Parameters(V, tau_c=tau_c, A=A, C_0 = C_0, C_init=C_0, sigma_c = sigma_c, k_d=k_d,
                         alpha=alpha, beta=beta,gamma=gamma)
     
@@ -59,6 +59,10 @@ def setupSimData():
 def forwardTest():
     P = setupSimData()
     S = smc.forward(P.V, P)
+    
+    pylab.figure()
+    pylab.plot(P.V.F)
+    pylab.title('F')
     
 
     cbar = numpy.zeros(P.V.T)
