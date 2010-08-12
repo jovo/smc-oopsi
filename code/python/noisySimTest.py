@@ -4,13 +4,13 @@ import numpy, pylab
 
 
 
-def setupSimData():
+def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355] ):
     T = 405     # no. of time steps
     dt = .025   # time step size (seconds)
     Nsec = T*dt #sim time in seconds
     tvec = numpy.arange(Nsec, step=dt) 
     
-    spt     = [50,128,247]#[26, 50, 84, 128, 199, 247, 355] # spike times
+    # spike times   [50,128,247]#
     rate  = len(spt) / Nsec
     ### A = 1 # jump size
     tau = 0.5 # Ca decay const
@@ -48,7 +48,7 @@ def setupSimData():
     F = alpha * S + beta + numpy.sqrt(gamma*S+zeta)*eps_t
     F[F<0] = numpy.finfo(float).eps
     
-    V = smc.Variables(F,dt, true_n=spt, Nparticles=999)
+    V = smc.Variables(F,dt, true_n=spt, Nparticles=99)
     P = smc.Parameters(V, tau_c=tau_c, A=A, C_0 = C_0, C_init=C_0, sigma_c = sigma_c, k_d=k_d,
                         alpha=alpha, beta=beta,gamma=gamma)
     
@@ -57,7 +57,8 @@ def setupSimData():
     
 
 def forwardTest():
-    P = setupSimData()
+    spikeTimes = spt = [26, 50, 84, 128, 199, 247, 355] 
+    P = setupSimData(spt = spikeTimes )
     S = smc.forward(P.V, P)
     
     pylab.figure()
@@ -79,11 +80,13 @@ def forwardTest():
     
     pylab.figure()
     pylab.hold(True)
-    pylab.plot(cbar, label='E[C]')
     pylab.title('expected Ca vs arbitrary particles')
     pylab.plot(S.C[3,:], label='particle 3')
     pylab.plot(S.C[10,:], label='particle 10')
     pylab.plot(S.C[20,:], label='particle 20')
+    pylab.plot(cbar, label='E[C]')
+    pylab.plot(spikeTimes, 6+numpy.ones(len(spikeTimes)), 'k.', label='simulated spike times')
+
     pylab.legend()
     
     
