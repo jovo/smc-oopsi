@@ -50,7 +50,7 @@ def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355] ):
     
     V = smc.Variables(F,dt, true_n=spt, Nparticles=99)
     P = smc.Parameters(V, tau_c=tau_c, A=A, C_0 = C_0, C_init=C_0, sigma_c = sigma_c, k_d=k_d,
-                        alpha=alpha, beta=beta,gamma=gamma)
+                        alpha=alpha, beta=beta,gamma=gamma, zeta=zeta)
     
     return P
 
