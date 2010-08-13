@@ -27,7 +27,7 @@ def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355] ):
     k_d = 200.0
     alpha = 1
     beta = 0
-    gamma = 0.001
+    gamma = 0e-5
     zeta = 5e-5
     a = dt/tau_c
     nn = numpy.zeros(T)
@@ -89,10 +89,12 @@ def forwardTest():
 
     pylab.legend()
     
-    
+    print(nbar.shape)
     pylab.figure()
-    pylab.plot(nbar)
-    pylab.title('expected spikes')
+    pylab.hold(True)
+    pylab.plot(nbar, label='expected spikes')
+    pylab.plot(spikeTimes, numpy.max(nbar)*numpy.ones(len(spikeTimes)), 'k.', label='simulated spike times')
+    pylab.title('spike detection')
     
 
     #pylab.figure()
