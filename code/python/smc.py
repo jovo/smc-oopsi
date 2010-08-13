@@ -7,7 +7,7 @@ class Variables(object):
     def __init__(self, F, dt, 
                  x=None,   #stimulus (zeros vector of length T that has 1s in the frames that have high spike likelihood)
                  name='oopy', #name for plots/figures
-                 Nparticles=99, # number of particles
+                 Nparticles=999, # number of particles
                  Nspikehist=0, # number of spike history terms
                  condsamp=False, #use conditional sampler?
                  true_n = None,   #true spikes, if available
@@ -319,6 +319,10 @@ class States(object):
 
         self.w_f[:,t] = w/numpy.sum(w)
         #print(self.w_f[:,t])
+        
+        #print('gamma: %f    zeta: %f'%(P.gamma, P.zeta))
+        #print(S_mu)
+        #print(w)
     
     
     
@@ -360,7 +364,7 @@ def forward(vars, pars):
         #here is stratified respampling:
         Nresamp = t
         S.Neff[0,Nresamp] =  1/numpy.sum(numpy.power(S.w_f[:,t],2))
-        print(S.Neff[0,Nresamp])
+        #print(S.Neff[0,Nresamp])
         if(S.Neff[0,Nresamp] < V.Nparticles/2.0):
             #so resample:
             print('resampling')
@@ -411,7 +415,8 @@ def backward():
     
     
     
-if __name__ == "__main__":
+    
+def realDataTest():
     par = os.path.pardir
     sep = os.path.sep
     fstring=par + sep + par + sep + 'data'+sep+'fluo.txt'
@@ -427,10 +432,37 @@ if __name__ == "__main__":
         numlist[i] = float(numtext[i])
         
     fluofile.close()
-    v = Variables(numlist, 0.075)
-    p = Parameters(v)
-    forward(v,p)
     
+    numlist -= numpy.min(numlist)
+    numlist /= numpy.max(numlist)
+    
+    v = Variables(numlist, 0.075)
+    p = Parameters(v, A=20, C_0=numpy.mean(numlist[1:10]),C_init=numpy.mean(numlist[1:10]))
+    S = forward(v,p)
+    
+    cbar = numpy.zeros(p.V.T)
+    nbar = numpy.zeros(p.V.T)
+    
+    for t in xrange(p.V.T):
+        for i in xrange(p.V.Nparticles):
+            weight = S.w_f[i,t]
+            cbar[t] += weight * S.C[i,t]
+            nbar[t] += weight * S.n[i,t]
+            
+            
+    pylab.figure()
+    pylab.hold(True)
+    pylab.plot(nbar, label='expected spikes')
+    pylab.title('expected spikes')
+    pylab.plot(numlist, label='F')
+    pylab.legend()
+    
+    pylab.figure()
+    pylab.plot(cbar)
+    pylab.title('expected Ca')
     
     #pylab.plot(numlist)
-    #pylab.show()
+    pylab.show()
+    
+if __name__ == "__main__":
+    realDataTest()

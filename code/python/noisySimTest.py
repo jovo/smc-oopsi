@@ -4,7 +4,7 @@ import numpy, pylab
 
 
 
-def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355] ):
+def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355], A=10, tau=0.5, beta=0, gamma=0e-5, zeta=5e-5, alpha=1 ):
     T = 405     # no. of time steps
     dt = .025   # time step size (seconds)
     Nsec = T*dt #sim time in seconds
@@ -13,22 +13,16 @@ def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355] ):
     # spike times   [50,128,247]#
     rate  = len(spt) / Nsec
     ### A = 1 # jump size
-    tau = 0.5 # Ca decay const
     lam = 1. / numpy.sqrt(rate)
     sig = 1.
     
     k = numpy.log(-numpy.log(1-rate*dt)/dt)
     tau_c = tau
-    A = 10 # jump size
     C_0 = .1
     C_init = C_0
     sigma_c = sig
     n = 1.
     k_d = 200.0
-    alpha = 1
-    beta = 0
-    gamma = 0e-5
-    zeta = 5e-5
     a = dt/tau_c
     nn = numpy.zeros(T)
     nn[spt] = 1
@@ -48,11 +42,25 @@ def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355] ):
     F = alpha * S + beta + numpy.sqrt(gamma*S+zeta)*eps_t
     F[F<0] = numpy.finfo(float).eps
     
-    V = smc.Variables(F,dt, true_n=spt, Nparticles=99)
+    V = smc.Variables(F,dt, true_n=spt, Nparticles=899)
     P = smc.Parameters(V, tau_c=tau_c, A=A, C_0 = C_0, C_init=C_0, sigma_c = sigma_c, k_d=k_d,
                         alpha=alpha, beta=beta,gamma=gamma, zeta=zeta)
     
     return P
+
+
+
+def forwardParamWalk():
+    spikeTimes = [26,50,128,199,247,355]
+    AVals = numpy.arange(5,40,5)
+    tauVals = numpy.arange(0.3,0.9,0.1)
+    betaVals = numpy.arange(0,10,2)
+    gammaVals = numpy.arange(0,2,0.25)
+    zetaVals = numpy.arange(0.00001,0.500001,0.05)
+    alphaVals = numpy.arange(0.25,2,0.25)
+    
+    
+    
 
     
 
@@ -89,11 +97,11 @@ def forwardTest():
 
     pylab.legend()
     
-    print(nbar.shape)
+    #print(nbar.shape)
     pylab.figure()
     pylab.hold(True)
     pylab.plot(nbar, label='expected spikes')
-    pylab.plot(spikeTimes, 0.9*numpy.ones(len(spikeTimes)), 'k.', label='simulated spike times')
+    pylab.plot(spikeTimes, 0.5*numpy.ones(len(spikeTimes)), 'k.', label='simulated spike times')
     pylab.legend()
     pylab.title('spike detection')
     
