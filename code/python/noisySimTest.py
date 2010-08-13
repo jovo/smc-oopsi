@@ -61,10 +61,10 @@ def forwardTest():
     P = setupSimData(spt = spikeTimes )
     S = smc.forward(P.V, P)
     
-    pylab.figure()
-    pylab.plot(P.V.F)
-    pylab.title('F')
-    
+##    pylab.figure()
+##    pylab.plot(P.V.F)
+##    pylab.title('F')
+##    
 
     cbar = numpy.zeros(P.V.T)
     nbar = numpy.zeros(P.V.T)
@@ -93,7 +93,8 @@ def forwardTest():
     pylab.figure()
     pylab.hold(True)
     pylab.plot(nbar, label='expected spikes')
-    pylab.plot(spikeTimes, numpy.max(nbar)*numpy.ones(len(spikeTimes)), 'k.', label='simulated spike times')
+    pylab.plot(spikeTimes, 0.9*numpy.ones(len(spikeTimes)), 'k.', label='simulated spike times')
+    pylab.legend()
     pylab.title('spike detection')
     
 

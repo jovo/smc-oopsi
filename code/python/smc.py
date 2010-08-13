@@ -360,7 +360,7 @@ def forward(vars, pars):
         #here is stratified respampling:
         Nresamp = t
         S.Neff[0,Nresamp] =  1/numpy.sum(numpy.power(S.w_f[:,t],2))
-        #print(S.Neff[0,Nresamp])
+        print(S.Neff[0,Nresamp])
         if(S.Neff[0,Nresamp] < V.Nparticles/2.0):
             #so resample:
             print('resampling')
@@ -371,7 +371,7 @@ def forward(vars, pars):
             S.p[:,t]   =  S.p[ind,t]   #:: if V.freq is 1, then t-V.freq+1 = t. right? #t-V.freq+1:t];      #% resample probabilities (necessary?)
             S.n[:,t]   =  S.n[ind,t]
             S.C[:,t]   =  S.C[ind,t]
-            S.w_f[:,t] = 1/V.Nparticles*numpy.ones((V.Nparticles)) #% reset weights
+            S.w_f[:,t] = (1.0/V.Nparticles)*numpy.ones((V.Nparticles)) #% reset weights
             #Nresamp += 1
             
         #skipping a spikehist block
