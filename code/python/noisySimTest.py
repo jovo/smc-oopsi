@@ -60,7 +60,15 @@ def forwardParamWalk():
     alphaVals = numpy.arange(0.25,2,0.25)
     
     
-    
+    for A in AVals:
+        P = setupSimData(spt=spikeTimes,A=A)
+        S = smc.forward(P.V, P)
+        
+        nbar = numpy.zeros(P.V.T)
+        for t in xrange(P.V.T):
+            for i in xrange(P.V.Nparticles):
+                nbar[t] += S.w_f[i,t] * S.n[i,t]
+        
 
     
 

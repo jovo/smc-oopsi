@@ -449,7 +449,9 @@ def realDataTest():
             cbar[t] += weight * S.C[i,t]
             nbar[t] += weight * S.n[i,t]
             
-            
+        
+        
+    #nbar /= p.V.Nparticles
     pylab.figure()
     pylab.hold(True)
     pylab.plot(nbar, label='expected spikes')
