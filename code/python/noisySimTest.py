@@ -50,24 +50,82 @@ def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355], A=10, tau=0.5, beta=0, 
 
 
 
+def paramWalkHelper(spikeTimes, P):
+    S = smc.forward(P.V, P)
+    trueSpikes = numpy.zeros(P.V.T,dtype=bool)
+    trueSpikes[spikeTimes] = True
+    
+    posterior = 0.0
+    for t in xrange(P.V.T):
+        nbar = 0.0
+        for i in xrange(P.V.Nparticles):
+            nbar += S.w_f[i,t] * S.n[i,t]
+        if(trueSpikes[t]):
+            posterior += nbar
+        else:
+            posterior += (1-nbar)
+    
+    return posterior/P.V.T
+    
+
 def forwardParamWalk():
     spikeTimes = [26,50,128,199,247,355]
-    AVals = numpy.arange(5,40,5)
-    tauVals = numpy.arange(0.3,0.9,0.1)
-    betaVals = numpy.arange(0,10,2)
-    gammaVals = numpy.arange(0,2,0.25)
-    zetaVals = numpy.arange(0.00001,0.500001,0.05)
-    alphaVals = numpy.arange(0.25,2,0.25)
+    AVals = numpy.arange(.05,20,.05)
+    tauVals = numpy.arange(0.3,0.9,0.05)
+    betaVals = numpy.arange(0,10,1)
+    gammaVals = numpy.arange(0,2,0.2)
+    zetaVals = numpy.arange(0.00001,0.500001,0.025)
+    alphaVals = numpy.arange(0.2,2,0.25)
     
-    
+    posteriors = []
     for A in AVals:
         P = setupSimData(spt=spikeTimes,A=A)
-        S = smc.forward(P.V, P)
-        
-        nbar = numpy.zeros(P.V.T)
-        for t in xrange(P.V.T):
-            for i in xrange(P.V.Nparticles):
-                nbar[t] += S.w_f[i,t] * S.n[i,t]
+        posteriors.append(paramWalkHelper(spikeTimes, P))
+    
+    pylab.figure()
+    pylab.plot(AVals,posteriors,'r.')
+    pylab.title('posterior weight as a fn of A')
+    
+    for tau in tauVals:
+        P = setupSimData(spt=spikeTimes,tau=tau)
+        posteriors.append(paramWalkHelper(spikeTimes, P))
+    pylab.figure()
+    pylab.plot(tauVals,posteriors,'r.')
+    pylab.title('posterior weight as a fn of tau')
+
+    for beta in betaVals:
+        P = setupSimData(spt=spikeTimes,beta=beta)
+        posteriors.append(paramWalkHelper(spikeTimes, P))
+    pylab.figure()
+    pylab.plot(betaVals,posteriors,'r.')
+    pylab.title('posterior weight as a fn of beta')
+    
+
+    for zeta in zetaVals:
+        P = setupSimData(spt=spikeTimes,zeta=zeta)
+        posteriors.append(paramWalkHelper(spikeTimes, P))
+    pylab.figure()
+    pylab.plot(zetaVals,posteriors,'r.')
+    pylab.title('posterior weight as a fn of zeta')
+    
+    for gamma in gammaVals:
+        P = setupSimData(spt=spikeTimes,gamma=gamma)
+        posteriors.append(paramWalkHelper(spikeTimes, P))
+    pylab.figure()
+    pylab.plot(gammaVals,posteriors,'r.')
+    pylab.title('posterior weight as a fn of gamma')    
+    
+    for alpha in alphaVals:
+        P = setupSimData(spt=spikeTimes,alpha=alpha)
+        posteriors.append(paramWalkHelper(spikeTimes, P))
+    pylab.figure()
+    pylab.plot(alphaVals,posteriors,'r.')
+    pylab.title('posterior weight as a fn of alpha')
+    
+    pylab.show()
+    
+
+
         
 
     
@@ -134,6 +192,6 @@ def forwardTest():
 
 
 if __name__ == "__main__":
-    forwardTest()
+    forwardParamWalk()
 
 
