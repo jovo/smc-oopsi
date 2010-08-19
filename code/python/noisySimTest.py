@@ -85,42 +85,52 @@ def forwardParamWalk():
     pylab.figure()
     pylab.plot(AVals,posteriors,'r.')
     pylab.title('posterior weight as a fn of A')
+    pylab.savefig('walk_A.png')
     
+    posteriors=[]
     for tau in tauVals:
         P = setupSimData(spt=spikeTimes,tau=tau)
         posteriors.append(paramWalkHelper(spikeTimes, P))
     pylab.figure()
     pylab.plot(tauVals,posteriors,'r.')
     pylab.title('posterior weight as a fn of tau')
+    pylab.savefig('walk_tau.png')
 
+    posteriors=[]
     for beta in betaVals:
         P = setupSimData(spt=spikeTimes,beta=beta)
         posteriors.append(paramWalkHelper(spikeTimes, P))
     pylab.figure()
     pylab.plot(betaVals,posteriors,'r.')
     pylab.title('posterior weight as a fn of beta')
+    pylab.savefig('walk_beta.png')
     
-
+    posteriors=[]
     for zeta in zetaVals:
         P = setupSimData(spt=spikeTimes,zeta=zeta)
         posteriors.append(paramWalkHelper(spikeTimes, P))
     pylab.figure()
     pylab.plot(zetaVals,posteriors,'r.')
     pylab.title('posterior weight as a fn of zeta')
+    pylab.savefig('walk_zeta.png')
     
+    posteriors=[]
     for gamma in gammaVals:
         P = setupSimData(spt=spikeTimes,gamma=gamma)
         posteriors.append(paramWalkHelper(spikeTimes, P))
     pylab.figure()
     pylab.plot(gammaVals,posteriors,'r.')
-    pylab.title('posterior weight as a fn of gamma')    
+    pylab.title('posterior weight as a fn of gamma')
+    pylab.savefig('walk_gamma.png')    
     
+    posteriors=[]
     for alpha in alphaVals:
         P = setupSimData(spt=spikeTimes,alpha=alpha)
         posteriors.append(paramWalkHelper(spikeTimes, P))
     pylab.figure()
     pylab.plot(alphaVals,posteriors,'r.')
     pylab.title('posterior weight as a fn of alpha')
+    pylab.savefig('walk_alpha.png')
     
     pylab.show()
     
