@@ -70,23 +70,28 @@ def paramWalkHelper(spikeTimes, P):
 
 def forwardParamWalk():
     spikeTimes = [26,50,128,199,247,355]
-    AVals = numpy.arange(.05,20,.05)
+    AVals = numpy.array((16,8,4,2,1))
     tauVals = numpy.arange(0.3,0.9,0.05)
     betaVals = numpy.arange(0,10,1)
-    gammaVals = numpy.arange(0,2,0.2)
+    gammaVals = numpy.array((1,1,1,1,1))
     zetaVals = numpy.arange(0.00001,0.500001,0.025)
     alphaVals = numpy.arange(0.2,2,0.25)
     
     posteriors = []
-    for A in AVals:
-        P = setupSimData(spt=spikeTimes,A=A)
+    for i in xrange(len(AVals)):
+    	A = AVals[i]
+	gamma = gammaVals[i]
+        P = setupSimData(spt=spikeTimes,A=A,gamma=gamma)
         posteriors.append(paramWalkHelper(spikeTimes, P))
     
+    print(posteriors)
     pylab.figure()
-    pylab.plot(AVals,posteriors,'r.')
-    pylab.title('posterior weight as a fn of A')
+    pylab.plot(AVals/gammaVals,posteriors,'r.')
+    pylab.title('posterior weight as a fn of A/gamma')
     pylab.savefig('walk_A.png')
     
+    return
+
     posteriors=[]
     for tau in tauVals:
         P = setupSimData(spt=spikeTimes,tau=tau)
@@ -145,10 +150,10 @@ def forwardTest():
     P = setupSimData(spt = spikeTimes )
     S = smc.forward(P.V, P)
     
-##    pylab.figure()
-##    pylab.plot(P.V.F)
-##    pylab.title('F')
-##    
+    pylab.figure()
+    pylab.plot(P.V.F)
+    pylab.title('Simulated Fluorescence')
+    
 
     cbar = numpy.zeros(P.V.T)
     nbar = numpy.zeros(P.V.T)
