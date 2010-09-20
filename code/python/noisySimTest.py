@@ -42,7 +42,11 @@ def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355], A=10, tau=0.5, beta=0, 
     F = alpha * S + beta + numpy.sqrt(gamma*S+zeta)*eps_t
     F[F<0] = numpy.finfo(float).eps
     
-    V = smc.Variables(F,dt, true_n=spt, Nparticles=899)
+    pylab.figure()
+    pylab.plot(F)
+    pylab.show()
+    
+    V = smc.Variables(F,dt, true_n=spt, Nparticles=99)
     P = smc.Parameters(V, tau_c=tau_c, A=A, C_0 = C_0, C_init=C_0, sigma_c = sigma_c, k_d=k_d,
                         alpha=alpha, beta=beta,gamma=gamma, zeta=zeta)
     
@@ -64,23 +68,25 @@ def paramWalkHelper(spikeTimes, P):
             posterior += nbar
         else:
             posterior += (1-nbar)
+            
+    print('posterior: %f     post/V.T: %f'%(posterior, posterior/P.V.T))
     
     return posterior/P.V.T
     
 
 def forwardParamWalk():
     spikeTimes = [26,50,128,199,247,355]
-    AVals = numpy.array((16,8,4,2,1))
+    AVals = numpy.array((4,4))#((4.,2.,1.,0.5, 0.25,0.0125))
     tauVals = numpy.arange(0.3,0.9,0.05)
     betaVals = numpy.arange(0,10,1)
-    gammaVals = numpy.array((1,1,1,1,1))
+    gammaVals = numpy.array((.01,.1))#((0.001,.001,.001,.001,.001, .001))
     zetaVals = numpy.arange(0.00001,0.500001,0.025)
     alphaVals = numpy.arange(0.2,2,0.25)
     
     posteriors = []
     for i in xrange(len(AVals)):
-    	A = AVals[i]
-	gamma = gammaVals[i]
+        A = AVals[i]
+        gamma = gammaVals[i]
         P = setupSimData(spt=spikeTimes,A=A,gamma=gamma)
         posteriors.append(paramWalkHelper(spikeTimes, P))
     
@@ -88,7 +94,7 @@ def forwardParamWalk():
     pylab.figure()
     pylab.plot(AVals/gammaVals,posteriors,'r.')
     pylab.title('posterior weight as a fn of A/gamma')
-    pylab.savefig('walk_A.png')
+    pylab.savefig('walk_A_gamma.png')
     
     return
 
