@@ -70,10 +70,10 @@ def paramWalkHelper(spikeTimes, P):
 
 def forwardParamWalk():
     spikeTimes = [26,50,128,199,247,355]
-    AVals = numpy.array((16,8,4,2,1))
+    AVals = numpy.array((16.,8.,4.,2.,1.))
     tauVals = numpy.arange(0.3,0.9,0.05)
     betaVals = numpy.arange(0,10,1)
-    gammaVals = numpy.array((1,1,1,1,1))
+    gammaVals = numpy.array((1.,1.,1.,1.,1.))
     zetaVals = numpy.arange(0.00001,0.500001,0.025)
     alphaVals = numpy.arange(0.2,2,0.25)
     
