@@ -312,9 +312,22 @@ class States(object):
         F_mu = P.alpha*S_mu+P.beta   #E[F_t]
         F_var = P.gamma*S_mu+P.zeta  #V[F_t]
         ln_w = -0.5* numpy.power((F[t] - F_mu),2.) / F_var - numpy.log(F_var)/2.
+        
+        for i in xrange(len(ln_w)):
+            if(numpy.isnan(ln_w[i])):
+                print('particle %d ln_w is NaN. \n F[t]=%f \n n=%s \n C=%f \n S_mu=%f \n F_mu=%f \n F_var=%f' %
+                (i,F[t], self.n[i,t], self.C[i,t], S_mu[i], F_mu[i], F_var[i]))
+        
+        
         if(t>0):
             ln_w += numpy.log(self.w_f[:,t-1])
+            
+        #print(ln_w)
+        
         ln_w = ln_w - numpy.max(ln_w)
+
+        
+        
         w = numpy.exp(ln_w)
 
         self.w_f[:,t] = w/numpy.sum(w)

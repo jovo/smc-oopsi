@@ -41,8 +41,13 @@ def setupSimData(spt = [26, 50, 84, 128, 199, 247, 355], A=10, tau=0.5, beta=0, 
     eps_t = numpy.random.normal(size=(T,1)) / 10.0
     F = alpha * S + beta + numpy.sqrt(gamma*S+zeta)*eps_t
     F[F<0] = numpy.finfo(float).eps
+    F[numpy.isnan(F)] = numpy.finfo(float).eps
     
-    V = smc.Variables(F,dt, true_n=spt, Nparticles=899)
+##    pylab.figure()
+##    pylab.plot(F)
+##    pylab.savefig('simF_gamma_%f.png'%gamma)
+##    
+    V = smc.Variables(F,dt, true_n=spt, Nparticles=699)
     P = smc.Parameters(V, tau_c=tau_c, A=A, C_0 = C_0, C_init=C_0, sigma_c = sigma_c, k_d=k_d,
                         alpha=alpha, beta=beta,gamma=gamma, zeta=zeta)
     
@@ -56,39 +61,48 @@ def paramWalkHelper(spikeTimes, P):
     trueSpikes[spikeTimes] = True
     
     posterior = 0.0
+    positivePosterior = 0.0
+    spikeCount = 0
     for t in xrange(P.V.T):
         nbar = 0.0
         for i in xrange(P.V.Nparticles):
             nbar += S.w_f[i,t] * S.n[i,t]
         if(trueSpikes[t]):
+            positivePosterior += nbar
             posterior += nbar
+            spikeCount += 1
         else:
             posterior += (1-nbar)
+            
+    print('posterior: %f     post/V.T: %f'%(posterior, posterior/P.V.T))
     
-    return posterior/P.V.T
+    return positivePosterior/spikeCount#posterior/P.V.T
     
 
 def forwardParamWalk():
-    spikeTimes = [26,50,128,199,247,355]
-    AVals = numpy.array((16.,8.,4.,2.,1.))
+    spikeTimes = [15,26,50,75,90,100,128,140,150,160,168,199,247,355]
+    AVals = numpy.array((4.,4.,4.,4.,4.,4.,4.,4.,4.,4.))/4.#((4.,2.,1.,0.5, 0.25,0.0125))
     tauVals = numpy.arange(0.3,0.9,0.05)
     betaVals = numpy.arange(0,10,1)
-    gammaVals = numpy.array((1.,1.,1.,1.,1.))
+    gammaVals = numpy.array((.000001,.00001,.0001,.001,.01,.1,1.,2.,4.,8.))#((0.001,.001,.001,.001,.001, .001))
     zetaVals = numpy.arange(0.00001,0.500001,0.025)
     alphaVals = numpy.arange(0.2,2,0.25)
     
     posteriors = []
     for i in xrange(len(AVals)):
-    	A = AVals[i]
-	gamma = gammaVals[i]
+        A = AVals[i]
+        gamma = gammaVals[i]
         P = setupSimData(spt=spikeTimes,A=A,gamma=gamma)
         posteriors.append(paramWalkHelper(spikeTimes, P))
+        print('A: %f   , gamma: %f'%(A,gamma))
     
     print(posteriors)
     pylab.figure()
-    pylab.plot(AVals/gammaVals,posteriors,'r.')
-    pylab.title('posterior weight as a fn of A/gamma')
-    pylab.savefig('walk_A.png')
+    pylab.semilogx(gammaVals,posteriors,'r.')
+    pylab.title('posterior for spiking time bins, A=1, varying gamma')
+    pylab.xlabel('gamma')
+    pylab.ylabel('')
+    pylab.savefig('walk_A_gamma.png')
     
     return
 
