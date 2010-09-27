@@ -338,7 +338,25 @@ class States(object):
         #print(w)
     
     
+def backward(vars, pars):
+    '''
+    '''
+      
+
+
+class Z(object):
+    '''more memoized shit'''
+    def __init__(vars, states):
+        self.oney = numpy.ones(size=(vars.Nparticles,1))
+        self.zeroy = numpy.zeros(size = (vars.Nparticles,vars.Nparticles))
+        self.C0 = states.C[:,vars.T-1]
+        self.C0mat = numpy.zeros(shape=(len(oney),len(C0)))
+        for i in xrange(len(c0)):
+            c0mat[:,i] = c0[i]
+        
+        
     
+
 def forward(vars, pars):
     
     '''
@@ -423,9 +441,20 @@ def histc_j(x, edges):
         
     
 
-def backward():
-    pass
+def backward(vars, states, pars):
+    z = Z(vars, states)
+    for t in reversed(xrange(vars.T)):
+        z = step_backward(vars, states, pars, z, t)
+        
+        
+def step_backward(vars, states, pars, z, t):
     
+    z.n1 = states.n[:,t]
+    ln_Pn = numpy.zeros(shape = z.oney.shape)
+    spikingInds = z.n1==1
+    nsInds = z.n1 != 1
+    ln_Pn[spikingInds] = numpy.log(states.p[spikingInds,t])
+    ln_Pn[nsInds]  = numpy.log(1.0 - states.p[nsInds,t])
     
     
     
