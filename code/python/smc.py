@@ -449,6 +449,7 @@ def backward(vars, states, pars):
         
 def step_backward(vars, states, pars, z, t):
     
+    # % compute ln P[n_t^i | h_t^i]
     z.n1 = states.n[:,t]
     ln_Pn = numpy.zeros(shape = z.oney.shape)
     spikingInds = z.n1==1
@@ -456,6 +457,31 @@ def step_backward(vars, states, pars, z, t):
     ln_Pn[spikingInds] = numpy.log(states.p[spikingInds,t])
     ln_Pn[nsInds]  = numpy.log(1.0 - states.p[nsInds,t])
     
+    # % compute ln P[C_t^i | C_{t-1}^j, n_t^i]
+    z.C0 = S.c[:,t-1]
+    z.C1 = S.c[:,t]
+    z.C0mat = numpy.zeros(shape=(len(z.oney),len(z.C0)))
+    for i in xrange(len(z.C0)):
+        z.C0mat[:,i] = z.C0[i]    
+    z.C1mat = numpy.zeros(shape=(len(z.oney),len(z.C1)))
+    for i in xrange(len(z.C1)):
+        z.C1mat[:,i] = z.C1[i]    
+    mu = (1-pars.a) * states.C[:,t-1] + pars.a * z.n1 + pars.a*pars.C_0
+    mumat = numpy.zeros(shape = (len(z.oney),len(mu)))
+    for i in xrange(len(mu)):
+        mumat[:,i] = mu[i]
+    ln_PC_Cn = -0.5 * (z.C1mat - mumat)**2 / pars.sig2_c
+    
+    #% compute ln P[h_t^i | h_{t-1}^j, n_{t-1}^i]
+    ln_Ph_hn = z.zeroy
+    #spike hist block.. but i think we skip it. 
+    
+    #% compute P[H_t^i | H_{t-1}^j]
+    sum_lns = ln_PC_Cn + ln_Ph_hn
+    for i in xrange(len(ln_Pn)):
+        sum_lns[:,i] += ln_Pn[i]
+    mx = numpy.max(sum_lns, 1) #seems that 1 is the rows? 
+      
     
     
 def realDataTest():
