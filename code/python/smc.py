@@ -445,6 +445,7 @@ def backward(vars, states, pars):
     z = Z(vars, states)
     for t in reversed(xrange(vars.T)):
         z = step_backward(vars, states, pars, z, t)
+        states.w_b[:,t-1] = z.w_b
         
         
 def step_backward(vars, states, pars, z, t):
@@ -480,7 +481,17 @@ def step_backward(vars, states, pars, z, t):
     sum_lns = ln_PC_Cn + ln_Ph_hn
     for i in xrange(len(ln_Pn)):
         sum_lns[:,i] += ln_Pn[i]
-    mx = numpy.max(sum_lns, 1) #seems that 1 is the rows? 
+    mx = numpy.max(sum_lns, 1) #seems that here, 1 is the rows? 
+    T = numpy.exp(sum_lns - mx)
+    ncols = T.shape[1] #we want each column to sum to one (here, 1 is cols)
+    for i in xrange(ncols):
+        normer = numpy.sum(T[:,i])
+        for j in xrange(T.shape[0]):
+            T[i,j] /= normer
+    
+    #% compute P[H_t^i, H_{t-1}^j | 0]
+    
+    
       
     
     
