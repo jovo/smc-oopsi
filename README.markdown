@@ -1,4 +1,9 @@
-This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009, and subsequent related advances.  Publication version of manuscript is now available from [Cell Press] [4] with subscription, or [here] [5] for free
+This is a repository containing the code to implement the algorithms employed in Vogelstein et al, 2009, 
+and subsequent related advances.  
+Publication version of manuscript is now available from [Cell Press] [4] with subscription, or [here] [5] for free.
+
+Note that the code in this repository is not kept up-to-date; rather, it is an archive of our work.  
+for an up-to-date code base, check out: https://github.com/jovo/oopsi
 
 
 This work may be cited as:
